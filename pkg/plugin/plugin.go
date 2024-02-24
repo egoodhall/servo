@@ -17,7 +17,7 @@ type ServocExtension interface {
 func ServeRequest(extension ServocExtension) error {
 	// stdout is used for IPC. We can make both stderr and stdout go
 	// to the same place while the extension is being served, which
-	// will let normal printing & logging continue to work.
+	// will let (most) normal printing & logging continue to work.
 	stdout := os.Stdout
 	os.Stdout = os.Stderr
 	defer func() { os.Stdout = stdout }()

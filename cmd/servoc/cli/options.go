@@ -2,13 +2,10 @@ package cli
 
 import (
 	"fmt"
-	"io"
-	"net/rpc"
-	"net/rpc/jsonrpc"
+	"strings"
 
 	"github.com/egoodhall/servo/internal/cliutil"
 	"github.com/egoodhall/servo/internal/plugin"
-	"github.com/egoodhall/servo/pkg/ipc"
 )
 
 type optionsCmd struct {
@@ -18,14 +15,27 @@ func (oc *optionsCmd) Run() error {
 	ctx, cancel := cliutil.NewSignalCtx()
 	defer cancel()
 
-	return plugin.RunAll(ctx, func(conn io.ReadWriteCloser) error {
-		request := new(ipc.InfoRequest)
-		response := new(ipc.GenerateResponse)
-
-		client := rpc.NewClientWithCodec(jsonrpc.NewClientCodec(conn))
-		if err := client.Call("ServocPlugin.Info", request, response); err != nil {
+	return plugin.RunAll(ctx, func(name string, client plugin.Client) error {
+		info, err := client.Info()
+		if err != nil {
 			return fmt.Errorf("info request: %w", err)
 		}
-		return client.Close()
+
+		for _, option := range info.Options {
+			optDesc := new(strings.Builder)
+			optDesc.WriteString(plugin.Name(name))
+			optDesc.WriteString(".")
+			optDesc.WriteString(option.Name)
+			optDesc.WriteString("\t")
+			if option.Default != "" {
+				optDesc.WriteString("(def: '")
+				optDesc.WriteString(option.Name)
+				optDesc.WriteString("')\t")
+			}
+			optDesc.WriteString(option.Description)
+			fmt.Println(optDesc.String())
+		}
+
+		return nil
 	})
 }

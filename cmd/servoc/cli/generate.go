@@ -2,9 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io"
-	"net/rpc"
-	"net/rpc/jsonrpc"
 	"os"
 
 	"github.com/egoodhall/servo/internal/cliutil"
@@ -28,17 +25,16 @@ func (gc *generateCmd) Run() error {
 	ctx, cancel := cliutil.NewSignalCtx()
 	defer cancel()
 
-	return plugin.RunAll(ctx, func(conn io.ReadWriteCloser) error {
-		request := &ipc.GenerateRequest{
+	return plugin.RunAll(ctx, func(name string, client plugin.Client) error {
+		response, err := client.Generate(&ipc.GenerateRequest{
 			Options: make([]ast.Option, 0),
 			Files:   files,
+		})
+		if err != nil {
+			return fmt.Errorf("generate: %w", err)
 		}
-		response := new(ipc.GenerateResponse)
 
-		client := rpc.NewClientWithCodec(jsonrpc.NewClientCodec(conn))
-		if err := client.Call("ServocPlugin.Generate", request, response); err != nil {
-			return fmt.Errorf("generate request: %w", err)
-		}
-		return client.Close()
+		fmt.Println(response)
+		return nil
 	})
 }

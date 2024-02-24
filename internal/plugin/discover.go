@@ -1,18 +1,19 @@
 package plugin
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-func Discover() []string {
+func Discover() ([]string, error) {
 	path := os.ExpandEnv(os.Getenv("PATH"))
 	dirs := strings.Split(path, ":")
 	extensions := make(map[string]struct{})
 	for _, dir := range dirs {
-		filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 			if d == nil {
 				return nil
 			}
@@ -24,7 +25,9 @@ func Discover() []string {
 				extensions[d.Name()] = struct{}{}
 			}
 			return nil
-		})
+		}); err != nil {
+			return nil, fmt.Errorf("walk %s: %w", dir, err)
+		}
 	}
 	ext := make([]string, len(extensions))
 	i := 0
@@ -32,5 +35,5 @@ func Discover() []string {
 		ext[i] = n
 		i++
 	}
-	return ext
+	return ext, nil
 }

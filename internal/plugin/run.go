@@ -3,7 +3,6 @@ package plugin
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,12 +11,16 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func RunAll(parent context.Context, run func(io.ReadWriteCloser) error) error {
+func RunAll(parent context.Context, run func(string, Client) error) error {
 	grp, ctx := errgroup.WithContext(parent)
-	for _, plugin := range Discover() {
-		p := plugin
+	plugins, err := Discover()
+	if err != nil {
+		return err
+	}
+	for _, path := range plugins {
+		p := path
 		grp.Go(func() error {
-			if err := Run(ctx, p, run); err != nil {
+			if err := runPlugin(ctx, p, run); err != nil {
 				return fmt.Errorf("%s: %w", filepath.Base(p), err)
 			}
 			return nil
@@ -26,7 +29,7 @@ func RunAll(parent context.Context, run func(io.ReadWriteCloser) error) error {
 	return grp.Wait()
 }
 
-func Run(parent context.Context, plugin string, run func(io.ReadWriteCloser) error) error {
+func runPlugin(parent context.Context, plugin string, run func(string, Client) error) error {
 	grp, ctx := errgroup.WithContext(parent)
 
 	// Create the command for running the plugin
@@ -45,7 +48,11 @@ func Run(parent context.Context, plugin string, run func(io.ReadWriteCloser) err
 
 	// Run whatever we're doing with the plugin.
 	grp.Go(func() error {
-		return run(conn)
+		client := newClient(conn)
+		if err := run(filepath.Base(plugin), client); err != nil {
+			return err
+		}
+		return client.close()
 	})
 
 	return grp.Wait()
