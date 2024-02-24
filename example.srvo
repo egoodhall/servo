@@ -1,0 +1,36 @@
+/*----------------------------------*
+ | An example servo definition file |
+ *----------------------------------*/
+
+// Options can be specified
+option gojson.enabled = "true";
+option gojson.package = "github.com/egoodhall/servo/example";
+option javajson.package = "com.egoodhall.servo.example"; 
+
+// A request to echo a message
+message EchoRequest {
+  message: string;
+}
+
+// A response with an echoed message
+message EchoResponse {
+  message: string;
+}
+
+// A status message to publish
+message StatusUpdate {
+  status: Status;
+  message: string?;
+}
+
+// The status of the message
+enum Status {
+  OK;
+  ERROR;
+}
+
+// A service that can echo and publish messages
+service ExampleService {
+  rpc echo(EchoRequest): EchoResponse;
+  pub publish(StatusUpdate);
+}
