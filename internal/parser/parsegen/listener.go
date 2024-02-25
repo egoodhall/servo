@@ -14,8 +14,11 @@ const (
 	NoType NodeType = iota
 	EnumName
 	EnumValue
+	FieldMod
 	FieldName
-	FieldType
+	ListElement
+	MapKeyType
+	MapValueType
 	MessageName
 	OptionName
 	OptionValue
@@ -24,6 +27,7 @@ const (
 	RpcName
 	RpcRequest
 	RpcResponse
+	ScalarType
 	ServiceName
 	NodeTypeMax
 )
@@ -32,8 +36,11 @@ var nodeTypeStr = [...]string{
 	"NONE",
 	"EnumName",
 	"EnumValue",
+	"FieldMod",
 	"FieldName",
-	"FieldType",
+	"ListElement",
+	"MapKeyType",
+	"MapValueType",
 	"MessageName",
 	"OptionName",
 	"OptionValue",
@@ -42,6 +49,7 @@ var nodeTypeStr = [...]string{
 	"RpcName",
 	"RpcRequest",
 	"RpcResponse",
+	"ScalarType",
 	"ServiceName",
 }
 

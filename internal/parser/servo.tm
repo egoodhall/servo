@@ -30,6 +30,11 @@ stringLiteral = /"([^"]|\\")*"/
   Name: /{ident}/
   Primitive: /string|int64|int32|float32|float64/ 1
   Modifier: /[?!]/
+  'map': /map/ 1
+  'list': /list/ 1
+  '[': /\[/
+  ']': /\]/
+  ':': /:/
 }
 
 <inServiceDefinition> {
@@ -75,9 +80,16 @@ OptionValue -> OptionValue: StringLiteral;
 Option: 'option' OptionName '=' OptionValue ';';
 
 # Type Definitions
-TypeRef: (Name | Primitive) | error (';'|'}');
+TypeRef: (Name | Primitive);
 FieldName -> FieldName: Name;
-FieldType -> FieldType: TypeRef Modifier?;
+ScalarType -> ScalarType: TypeRef;
+MapKeyType -> MapKeyType: Primitive;
+MapValueType -> MapValueType: TypeRef;
+MapType: 'map' '[' MapKeyType ':' MapValueType ']';
+ListElementType -> ListElement: TypeRef;
+ListType: 'list' '[' ListElementType ']';
+FieldMod -> FieldMod: Modifier;
+FieldType: (ScalarType | MapType | ListType) FieldMod?;
 FieldDef: (FieldName WhiteSpace? ':' WhiteSpace? FieldType WhiteSpace? ';') | error  (';'|'}');
 FieldDefList: (FieldDef | FieldDef WhiteSpace);
 MessageName -> MessageName: Name;

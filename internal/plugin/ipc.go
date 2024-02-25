@@ -27,7 +27,7 @@ func (c client) Info() (*ipc.InfoResponse, error) {
 
 func (c client) Generate(request *ipc.GenerateRequest) (*ipc.GenerateResponse, error) {
 	res := new(ipc.GenerateResponse)
-	return res, c.c.Call("ServocPlugin.Info", request, res)
+	return res, c.c.Call("ServocPlugin.Generate", request, res)
 }
 
 func (c client) close() error {

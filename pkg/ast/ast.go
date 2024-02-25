@@ -7,8 +7,6 @@ type File struct {
 	Services []Service `json:"services"`
 }
 
-type Coords [2]int
-
 type Option struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -20,35 +18,23 @@ type Message struct {
 }
 
 type Field struct {
-	Name string `json:"name"`
-	Type Type   `json:"type"`
-}
-
-type Type struct {
-	Type     string `json:"type"`
+	Name     string `json:"name"`
+	Type     Type   `json:"type"`
 	Optional bool   `json:"optional"`
 }
 
-func (t Type) String() string {
-	if t.Optional {
-		return t.Type + "?"
-	}
-	return t.Type
+type MapType struct {
+	KeyType   ScalarType `json:"key"`
+	ValueType ScalarType `json:"value"`
 }
 
-type Primitive string
-
-func (p Primitive) String() string {
-	return string(p)
+type ListType struct {
+	ElementType ScalarType `json:"element"`
 }
 
-const (
-	String  Primitive = "string"
-	Int32   Primitive = "int32"
-	Int64   Primitive = "int64"
-	Float32 Primitive = "float32"
-	Float64 Primitive = "float64"
-)
+type ScalarType struct {
+	Name string `json:"name"`
+}
 
 type Service struct {
 	Name string `json:"name"`

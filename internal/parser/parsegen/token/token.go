@@ -25,12 +25,16 @@ const (
 	NAME
 	PRIMITIVE
 	MODIFIER
+	MAP    // map
+	LIST   // list
+	LBRACK // [
+	RBRACK // ]
+	COLON  // :
 	RPC    // rpc
 	PUB    // pub
 	LPAREN // (
 	RPAREN // )
 	VALUE
-	COLON     // :
 	SEMICOLON // ;
 	LBRACE    // {
 	RBRACE    // }
@@ -54,12 +58,16 @@ var tokenStr = [...]string{
 	"NAME",
 	"PRIMITIVE",
 	"MODIFIER",
+	"map",
+	"list",
+	"[",
+	"]",
+	":",
 	"rpc",
 	"pub",
 	"(",
 	")",
 	"VALUE",
-	":",
 	";",
 	"{",
 	"}",

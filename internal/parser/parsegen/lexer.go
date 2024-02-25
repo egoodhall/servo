@@ -120,16 +120,16 @@ restart:
 	rule := tmFirstRule - state
 recovered:
 	switch rule {
-	case 12:
+	case 17:
 		hh := hash & 7
 		switch hh {
 		case 5:
 			if hash == 0x1b2fd && "pub" == l.source[l.tokenOffset:l.offset] {
-				rule = 14
+				rule = 19
 				break
 			}
 			if hash == 0x1b9e5 && "rpc" == l.source[l.tokenOffset:l.offset] {
-				rule = 13
+				rule = 18
 				break
 			}
 		}
@@ -171,11 +171,11 @@ recovered:
 		space = true
 	case 8: // BlockComment: /\/\*([^*]|\*+[^*\/])*\**\*\//
 		space = true
-	case 21: // '}': /\}/
+	case 25: // '}': /\}/
 		{
 			l.State = StateInitial
 		}
-	case 24: // ';': /;/
+	case 28: // ';': /;/
 		{
 			l.State = StateInitial
 		}

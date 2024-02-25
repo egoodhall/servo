@@ -68,7 +68,15 @@ func getReferencedTypeNames(file ast.File) set[string] {
 	names := make(set[string])
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
-			names[field.Type.Type] = struct{}{}
+			switch t := (field.Type).(type) {
+			case ast.ScalarType:
+				names[t.Name] = struct{}{}
+			case ast.ListType:
+				names[t.ElementType.Name] = struct{}{}
+			case ast.MapType:
+				names[t.KeyType.Name] = struct{}{}
+				names[t.ValueType.Name] = struct{}{}
+			}
 		}
 	}
 	for _, service := range file.Services {
@@ -89,8 +97,8 @@ func getDeclaredTypeNames(file ast.File) set[string] {
 		extract(file.Messages, func(m ast.Message) string { return m.Name }),
 		extract(file.Services, func(s ast.Service) string { return s.Name }),
 	)
-	for _, p := range []ast.Primitive{ast.String, ast.Int32, ast.Int64, ast.Float32, ast.Float64} {
-		names[string(p)] = struct{}{}
+	for _, p := range []string{"string", "int32", "int64", "float32", "float64"} {
+		names[p] = struct{}{}
 	}
 	return names
 }

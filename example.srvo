@@ -17,20 +17,26 @@ message EchoResponse {
   message: string;
 }
 
+// A service that can echo and publish messages
+service EchoService {
+  rpc echo(EchoRequest): EchoResponse;
+}
+
 // A status message to publish
 message StatusUpdate {
-  status: Status;
-  message: string?;
+  type: MetricType;
+  name: string;
+  labels: map[string:string];
+  value: float64;
 }
 
 // The status of the message
-enum Status {
-  OK;
-  ERROR;
+enum MetricType {
+  COUNTER;
+  GAUGE;
 }
 
-// A service that can echo and publish messages
-service ExampleService {
-  rpc echo(EchoRequest): EchoResponse;
+// A service to publish metrics
+service MetricsPublisher {
   pub publish(StatusUpdate);
 }

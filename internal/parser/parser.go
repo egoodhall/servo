@@ -50,16 +50,19 @@ func File(in io.Reader) (ast.File, error) {
 
 	f, err := gather(tc.tokens)
 	if err != nil {
-		return f, nil
+		return f, err
 	}
 
 	return f, validate.File(f)
 }
 
 type token struct {
-	typ    parsegen.NodeType
-	value  string
-	coords [2]int
+	typ   parsegen.NodeType
+	value string
+}
+
+func (t token) String() string {
+	return fmt.Sprintf("%s{%s}", t.typ, t.value)
 }
 
 type tokenCollector struct {
@@ -78,10 +81,6 @@ func (tc *tokenCollector) Collect(typ parsegen.NodeType, frm, to int) {
 	tc.tokens = append(tc.tokens, token{
 		typ:   typ,
 		value: tc.input[frm:to],
-		coords: [2]int{
-			strings.Count(tc.input[:frm], "\n"),
-			to - strings.LastIndex(tc.input[:frm], "\n"),
-		},
 	})
 }
 
@@ -93,41 +92,40 @@ func gather(tokens []token) (ast.File, error) {
 		Services: make([]ast.Service, 0),
 	}
 
-	typesAndServices := partition(tokens, func(typ parsegen.NodeType) bool {
+	tokenGroups := partition(tokens, func(typ parsegen.NodeType) bool {
 		return typ == parsegen.MessageName ||
 			typ == parsegen.ServiceName ||
 			typ == parsegen.OptionName ||
 			typ == parsegen.EnumName
 	})
 
-	for _, tokens := range typesAndServices {
-		name := tokens[0]
-		switch name.typ {
+	for _, tkns := range tokenGroups {
+		switch tkns[0].typ {
 		case parsegen.OptionName:
-			opt, err := gatherOption(name, tokens[1:])
+			opt, err := gatherOption(tkns[0], tkns[1:])
 			if err != nil {
 				return ast.File{}, err
 			}
 			file.Options = append(file.Options, opt)
 		case parsegen.ServiceName:
-			svc, err := gatherService(name, tokens[1:])
+			svc, err := gatherService(tkns[0], tkns[1:])
 			if err != nil {
 				return ast.File{}, err
 			}
 			file.Services = append(file.Services, svc)
 		case parsegen.MessageName:
-			typ, err := gatherType(name, tokens[1:])
+			msg, err := gatherMessage(tkns[0], tkns[1:])
 			if err != nil {
 				return ast.File{}, err
 			}
-			file.Messages = append(file.Messages, typ)
+			file.Messages = append(file.Messages, msg)
 		case parsegen.EnumName:
 			file.Enums = append(file.Enums, ast.Enum{
-				Name:   name.value,
-				Values: values(tokens[1:]),
+				Name:   tkns[0].value,
+				Values: values(tkns[1:]),
 			})
 		default:
-			return ast.File{}, fmt.Errorf("unexpected %s token: '%s'", name.typ, name.value)
+			return ast.File{}, fmt.Errorf("unexpected %s token: '%s'", tkns[0].typ, tkns[0].value)
 		}
 	}
 	return file, nil
@@ -207,7 +205,7 @@ func gatherRpc(name token, tokens []token) (ast.Rpc, error) {
 	}
 
 	res := tokens[1]
-	if req.typ != parsegen.RpcRequest {
+	if res.typ != parsegen.RpcResponse {
 		return ast.Rpc{}, fmt.Errorf("unexpected token for rpc response: %s", res.typ)
 	}
 
@@ -218,25 +216,24 @@ func gatherRpc(name token, tokens []token) (ast.Rpc, error) {
 	}, nil
 }
 
-func gatherType(name token, tokens []token) (ast.Message, error) {
+func gatherMessage(name token, tokens []token) (ast.Message, error) {
 	svc := ast.Message{
 		Name:   name.value,
 		Fields: make([]ast.Field, 0),
 	}
 
-	for _, method := range partition(tokens, func(typ parsegen.NodeType) bool {
+	for _, field := range partition(tokens, func(typ parsegen.NodeType) bool {
 		return typ == parsegen.FieldName
 	}) {
-		name := method[0]
-		switch name.typ {
+		switch field[0].typ {
 		case parsegen.FieldName:
-			field, err := gatherField(name, method[1:])
+			fld, err := gatherField(field[0], field[1:])
 			if err != nil {
-				return ast.Message{}, fmt.Errorf("method %s: %w", name.value, err)
+				return ast.Message{}, fmt.Errorf("field %s: %w", field[0].value, err)
 			}
-			svc.Fields = append(svc.Fields, field)
+			svc.Fields = append(svc.Fields, fld)
 		default:
-			return ast.Message{}, fmt.Errorf("unexpected %s token: '%s'", name.typ, name.value)
+			return ast.Message{}, fmt.Errorf("unexpected %s token: '%s'", field[0].typ, field[0].value)
 		}
 	}
 
@@ -244,21 +241,41 @@ func gatherType(name token, tokens []token) (ast.Message, error) {
 }
 
 func gatherField(name token, tokens []token) (ast.Field, error) {
-	if len(tokens) != 1 {
-		return ast.Field{}, fmt.Errorf("token mismatch: need 1 field value")
+	typ, err := gatherFieldType(tokens)
+	if err != nil {
+		return ast.Field{}, err
 	}
 
-	val := tokens[0]
-	if val.typ != parsegen.FieldType {
-		return ast.Field{}, fmt.Errorf("unexpected token for field type: %s", val.typ)
-	}
 	return ast.Field{
-		Name: name.value,
-		Type: ast.Type{
-			Type:     strings.TrimRight(val.value, "?!"),
-			Optional: strings.HasSuffix(val.value, "?"),
-		},
+		Name:     name.value,
+		Type:     typ,
+		Optional: isOptional(tokens),
 	}, nil
+}
+
+func gatherFieldType(tokens []token) (ast.Type, error) {
+	switch tokens[0].typ {
+	case parsegen.ScalarType:
+		return ast.ScalarType{
+			Name: tokens[0].value,
+		}, nil
+	case parsegen.MapKeyType:
+		return ast.MapType{
+			KeyType:   ast.ScalarType{Name: tokens[0].value},
+			ValueType: ast.ScalarType{Name: tokens[1].value},
+		}, nil
+	case parsegen.ListElement:
+		return ast.ListType{
+			ElementType: ast.ScalarType{Name: tokens[0].value},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unexpected field type: %s", tokens[0].typ.String())
+	}
+}
+
+func isOptional(tokens []token) bool {
+	tkn := tokens[len(tokens)-1]
+	return tkn.typ == parsegen.FieldMod && strings.Contains(tkn.value, "?")
 }
 
 func values(in []token) []string {
