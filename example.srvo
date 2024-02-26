@@ -23,11 +23,12 @@ service EchoService {
 }
 
 // A status message to publish
-message StatusUpdate {
+message Metric {
   type: MetricType;
   name: string;
-  labels: map[string:string];
+  labels: [string:string];
   value: float64;
+  ids: [int64];
 }
 
 // The status of the message
@@ -38,5 +39,5 @@ enum MetricType {
 
 // A service to publish metrics
 service MetricsPublisher {
-  pub publish(StatusUpdate);
+  pub publish(Metric);
 }

@@ -7,13 +7,12 @@ import (
 	"github.com/egoodhall/servo/internal/cliutil"
 	"github.com/egoodhall/servo/internal/parser"
 	"github.com/egoodhall/servo/internal/plugin"
-	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/egoodhall/servo/pkg/ipc"
 )
 
 type generateCmd struct {
-	Plugins []string   `name:"plugin" short:"p"`
-	Files   []*os.File `arg:"" required:"" name:"files" type:"existingFile"`
+	Options map[string]string `name:"option" short:"o"`
+	Files   []*os.File        `arg:"" required:"" name:"files" type:"existingFile"`
 }
 
 func (gc *generateCmd) Run() error {
@@ -27,7 +26,7 @@ func (gc *generateCmd) Run() error {
 
 	return plugin.RunAll(ctx, func(name string, client plugin.Client) error {
 		response, err := client.Generate(&ipc.GenerateRequest{
-			Options: make([]ast.Option, 0),
+			Options: plugin.ToOptions(gc.Options),
 			Files:   files,
 		})
 		if err != nil {

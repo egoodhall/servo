@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/egoodhall/servo/internal/cliutil"
 	"github.com/egoodhall/servo/internal/plugin"
 )
@@ -21,19 +19,18 @@ func (oc *optionsCmd) Run() error {
 			return fmt.Errorf("info request: %w", err)
 		}
 
+		var optlen int
 		for _, option := range info.Options {
-			optDesc := new(strings.Builder)
-			optDesc.WriteString(plugin.Name(name))
-			optDesc.WriteString(".")
-			optDesc.WriteString(option.Name)
-			optDesc.WriteString("\t")
-			if option.Default != "" {
-				optDesc.WriteString("(def: '")
-				optDesc.WriteString(option.Name)
-				optDesc.WriteString("')\t")
+			optlen = max(optlen, len(plugin.OptionName(name, option.Name)))
+		}
+		optTmpl := fmt.Sprintf("%%-%ds%%s%%s\n", optlen+4)
+
+		for _, option := range info.Options {
+			defstr := ""
+			if option.Default != nil {
+				defstr = fmt.Sprintf(" [default: %v]", option.Default)
 			}
-			optDesc.WriteString(option.Description)
-			fmt.Println(optDesc.String())
+			fmt.Printf(optTmpl, plugin.OptionName(name, option.Name), option.Description, defstr)
 		}
 
 		return nil

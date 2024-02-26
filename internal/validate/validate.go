@@ -7,7 +7,7 @@ import (
 	"github.com/egoodhall/servo/pkg/ast"
 )
 
-func File(file ast.File) error {
+func File(file *ast.File) error {
 	errs := make([]error, 0)
 	if err := validateUniqueDeclaredTypeNames(file); err != nil {
 		errs = append(errs, err)
@@ -20,15 +20,15 @@ func File(file ast.File) error {
 	}
 
 	for _, message := range file.Messages {
-		if err := validateUnique(extract(message.Fields, func(f ast.Field) string { return f.Name })); err != nil {
+		if err := validateUnique(extract(message.Fields, func(f *ast.Field) string { return f.Name })); err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", message.Name, err))
 		}
 	}
 
 	for _, service := range file.Services {
 		if err := validateUnique(
-			extract(service.Rpcs, func(r ast.Rpc) string { return r.Name }),
-			extract(service.Pubs, func(p ast.Pub) string { return p.Name }),
+			extract(service.Rpcs, func(r *ast.Rpc) string { return r.Name }),
+			extract(service.Pubs, func(p *ast.Pub) string { return p.Name }),
 		); err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", service.Name, err))
 		}
@@ -44,15 +44,15 @@ func File(file ast.File) error {
 	return errors.Join(errs...)
 }
 
-func validateUniqueDeclaredTypeNames(file ast.File) error {
+func validateUniqueDeclaredTypeNames(file *ast.File) error {
 	return validateUnique(
-		extract(file.Enums, func(e ast.Enum) string { return e.Name }),
-		extract(file.Messages, func(m ast.Message) string { return m.Name }),
-		extract(file.Services, func(s ast.Service) string { return s.Name }),
+		extract(file.Enums, func(e *ast.Enum) string { return e.Name }),
+		extract(file.Messages, func(m *ast.Message) string { return m.Name }),
+		extract(file.Services, func(s *ast.Service) string { return s.Name }),
 	)
 }
 
-func validateTypeRefs(file ast.File) error {
+func validateTypeRefs(file *ast.File) error {
 	declaredNames := getDeclaredTypeNames(file)
 	referencedNames := getReferencedTypeNames(file)
 	errs := make(set[error])
@@ -64,7 +64,7 @@ func validateTypeRefs(file ast.File) error {
 	return errors.Join(errs.toSlice()...)
 }
 
-func getReferencedTypeNames(file ast.File) set[string] {
+func getReferencedTypeNames(file *ast.File) set[string] {
 	names := make(set[string])
 	for _, message := range file.Messages {
 		for _, field := range message.Fields {
@@ -91,11 +91,11 @@ func getReferencedTypeNames(file ast.File) set[string] {
 	return names
 }
 
-func getDeclaredTypeNames(file ast.File) set[string] {
+func getDeclaredTypeNames(file *ast.File) set[string] {
 	names := buildSet(
-		extract(file.Enums, func(e ast.Enum) string { return e.Name }),
-		extract(file.Messages, func(m ast.Message) string { return m.Name }),
-		extract(file.Services, func(s ast.Service) string { return s.Name }),
+		extract(file.Enums, func(e *ast.Enum) string { return e.Name }),
+		extract(file.Messages, func(m *ast.Message) string { return m.Name }),
+		extract(file.Services, func(s *ast.Service) string { return s.Name }),
 	)
 	for _, p := range []string{"string", "int32", "int64", "float32", "float64"} {
 		names[p] = struct{}{}
@@ -103,7 +103,7 @@ func getDeclaredTypeNames(file ast.File) set[string] {
 	return names
 }
 
-func extract[T any, C comparable](ts []T, extract func(T) C) []C {
+func extract[T any, C comparable](ts []*T, extract func(*T) C) []C {
 	cs := make([]C, len(ts))
 	for i, t := range ts {
 		cs[i] = extract(t)

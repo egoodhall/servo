@@ -11,6 +11,9 @@ package = "github.com/egoodhall/servo/internal/parser/parsegen"
 ident = /[a-zA-Z_][a-zA-Z0-9_]+/
 
 stringLiteral = /"([^"]|\\")*"/
+intLiteral = /-?[0-9]+/
+floatLiteral = /-?[0-9]+\.[0-9]+/
+boolLiteral = /true|false/
 
 <initial> {
   'enum': /enum/ { l.State = StateInEnumDefinition }
@@ -30,8 +33,6 @@ stringLiteral = /"([^"]|\\")*"/
   Name: /{ident}/
   Primitive: /string|int64|int32|float32|float64/ 1
   Modifier: /[?!]/
-  'map': /map/ 1
-  'list': /list/ 1
   '[': /\[/
   ']': /\]/
   ':': /:/
@@ -64,6 +65,9 @@ stringLiteral = /"([^"]|\\")*"/
   Name: /({ident}\.)?{ident}/
   '=': /=/
   StringLiteral: /{stringLiteral}/
+  BoolLiteral: /{boolLiteral}/ 1
+  IntLiteral: /{intLiteral}/
+  FloatLiteral: /{floatLiteral}/
   ';': /;/ { l.State = StateInitial }
 }
 
@@ -76,7 +80,11 @@ Comment: BlockComment | EolComment;
 WhiteSpace: (Comment | WS)+;
 
 OptionName -> OptionName: Name;
-OptionValue -> OptionValue: StringLiteral;
+OptionString -> OptionString: StringLiteral;
+OptionBool -> OptionBool: BoolLiteral;
+OptionInt -> OptionInt: IntLiteral;
+OptionFloat -> OptionFloat: FloatLiteral;
+OptionValue: OptionString | OptionBool | OptionInt | OptionFloat;
 Option: 'option' OptionName '=' OptionValue ';';
 
 # Type Definitions
@@ -85,9 +93,9 @@ FieldName -> FieldName: Name;
 ScalarType -> ScalarType: TypeRef;
 MapKeyType -> MapKeyType: Primitive;
 MapValueType -> MapValueType: TypeRef;
-MapType: 'map' '[' MapKeyType ':' MapValueType ']';
+MapType: '[' MapKeyType ':' MapValueType ']';
 ListElementType -> ListElement: TypeRef;
-ListType: 'list' '[' ListElementType ']';
+ListType: '[' ListElementType ']';
 FieldMod -> FieldMod: Modifier;
 FieldType: (ScalarType | MapType | ListType) FieldMod?;
 FieldDef: (FieldName WhiteSpace? ':' WhiteSpace? FieldType WhiteSpace? ';') | error  (';'|'}');

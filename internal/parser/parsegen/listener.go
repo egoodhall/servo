@@ -20,8 +20,11 @@ const (
 	MapKeyType
 	MapValueType
 	MessageName
+	OptionBool
+	OptionFloat
+	OptionInt
 	OptionName
-	OptionValue
+	OptionString
 	PubMessage
 	PubName
 	RpcName
@@ -42,8 +45,11 @@ var nodeTypeStr = [...]string{
 	"MapKeyType",
 	"MapValueType",
 	"MessageName",
+	"OptionBool",
+	"OptionFloat",
+	"OptionInt",
 	"OptionName",
-	"OptionValue",
+	"OptionString",
 	"PubMessage",
 	"PubName",
 	"RpcName",

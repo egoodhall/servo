@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/egoodhall/servo/internal/parser/parsegen"
@@ -11,8 +13,8 @@ import (
 	"github.com/egoodhall/servo/pkg/ast"
 )
 
-func Files[T io.Reader](in ...T) ([]ast.File, error) {
-	files := make([]ast.File, len(in))
+func Files[T io.Reader](in ...T) ([]*ast.File, error) {
+	files := make([]*ast.File, len(in))
 	var err error
 	for i, rd := range in {
 		files[i], err = File(rd)
@@ -23,10 +25,10 @@ func Files[T io.Reader](in ...T) ([]ast.File, error) {
 	return files, nil
 }
 
-func File(in io.Reader) (ast.File, error) {
+func File(in io.Reader) (*ast.File, error) {
 	data, err := io.ReadAll(in)
 	if err != nil {
-		return ast.File{}, err
+		return nil, err
 	}
 
 	lexer := new(parsegen.Lexer)
@@ -41,11 +43,11 @@ func File(in io.Reader) (ast.File, error) {
 	parser.Init(tc.HandleError, tc.Collect)
 
 	if err := parser.Parse(lexer); err != nil {
-		return ast.File{}, err
+		return nil, err
 	}
 
 	if tc.errors {
-		return ast.File{}, errors.New("syntax error")
+		return nil, errors.New("syntax error")
 	}
 
 	f, err := gather(tc.tokens)
@@ -84,12 +86,12 @@ func (tc *tokenCollector) Collect(typ parsegen.NodeType, frm, to int) {
 	})
 }
 
-func gather(tokens []token) (ast.File, error) {
+func gather(tokens []token) (*ast.File, error) {
 	file := ast.File{
-		Options:  make([]ast.Option, 0),
-		Enums:    make([]ast.Enum, 0),
-		Messages: make([]ast.Message, 0),
-		Services: make([]ast.Service, 0),
+		Options:  make([]*ast.Option[any], 0),
+		Enums:    make([]*ast.Enum, 0),
+		Messages: make([]*ast.Message, 0),
+		Services: make([]*ast.Service, 0),
 	}
 
 	tokenGroups := partition(tokens, func(typ parsegen.NodeType) bool {
@@ -104,44 +106,76 @@ func gather(tokens []token) (ast.File, error) {
 		case parsegen.OptionName:
 			opt, err := gatherOption(tkns[0], tkns[1:])
 			if err != nil {
-				return ast.File{}, err
+				return nil, err
 			}
 			file.Options = append(file.Options, opt)
 		case parsegen.ServiceName:
 			svc, err := gatherService(tkns[0], tkns[1:])
 			if err != nil {
-				return ast.File{}, err
+				return nil, err
 			}
 			file.Services = append(file.Services, svc)
 		case parsegen.MessageName:
 			msg, err := gatherMessage(tkns[0], tkns[1:])
 			if err != nil {
-				return ast.File{}, err
+				return nil, err
 			}
 			file.Messages = append(file.Messages, msg)
 		case parsegen.EnumName:
-			file.Enums = append(file.Enums, ast.Enum{
+			file.Enums = append(file.Enums, &ast.Enum{
 				Name:   tkns[0].value,
 				Values: values(tkns[1:]),
 			})
 		default:
-			return ast.File{}, fmt.Errorf("unexpected %s token: '%s'", tkns[0].typ, tkns[0].value)
+			return nil, fmt.Errorf("unexpected %s token: '%s'", tkns[0].typ, tkns[0].value)
 		}
 	}
-	return file, nil
+	return &file, nil
 }
 
-func gatherOption(name token, tokens []token) (ast.Option, error) {
+var intPattern = regexp.MustCompile("")
+
+func gatherOption(name token, tokens []token) (*ast.Option[any], error) {
 	if len(tokens) != 1 {
-		return ast.Option{}, fmt.Errorf("token mismatch: need 1 value")
+		return nil, fmt.Errorf("token mismatch: need 1 value")
 	}
-	return ast.Option{
+
+	token := tokens[0]
+	var value any
+	switch token.typ {
+	case parsegen.OptionString:
+		value = strings.Trim(token.value, `"`)
+	case parsegen.OptionBool:
+		value = token.value == "true"
+	case parsegen.OptionInt:
+		v, err := strconv.Atoi(token.value)
+		if err != nil {
+			return nil, err
+		}
+		value = v
+	case parsegen.OptionFloat:
+		if v, err := strconv.ParseFloat(token.value, 32); errors.Is(err, strconv.ErrRange) {
+			if v, err := strconv.ParseFloat(token.value, 64); err != nil {
+				return nil, err
+			} else {
+				value = v
+			}
+		} else if err != nil {
+			return nil, err
+		} else {
+			value = v
+		}
+	default:
+		return nil, fmt.Errorf("unexpected option value token: %s", token.typ)
+	}
+
+	return &ast.Option[any]{
 		Name:  name.value,
-		Value: strings.Trim(tokens[0].value, `"`),
+		Value: value,
 	}, nil
 }
 
-func gatherService(name token, tokens []token) (ast.Service, error) {
+func gatherService(name token, tokens []token) (*ast.Service, error) {
 	svc := ast.Service{
 		Name: name.value,
 	}
@@ -154,72 +188,72 @@ func gatherService(name token, tokens []token) (ast.Service, error) {
 		case parsegen.PubName:
 			pub, err := gatherPub(name, method[1:])
 			if err != nil {
-				return ast.Service{}, fmt.Errorf("method %s: %w", name.value, err)
+				return nil, fmt.Errorf("method %s: %w", name.value, err)
 			}
 			if svc.Pubs == nil {
-				svc.Pubs = []ast.Pub{pub}
+				svc.Pubs = []*ast.Pub{pub}
 			} else {
 				svc.Pubs = append(svc.Pubs, pub)
 			}
 		case parsegen.RpcName:
 			rpc, err := gatherRpc(name, method[1:])
 			if err != nil {
-				return ast.Service{}, fmt.Errorf("method %s: %w", name.value, err)
+				return nil, fmt.Errorf("method %s: %w", name.value, err)
 			}
 			if svc.Rpcs == nil {
-				svc.Rpcs = []ast.Rpc{rpc}
+				svc.Rpcs = []*ast.Rpc{rpc}
 			} else {
 				svc.Rpcs = append(svc.Rpcs, rpc)
 			}
 		default:
-			return ast.Service{}, fmt.Errorf("unexpected %s token: '%s'", name.typ, name.value)
+			return nil, fmt.Errorf("unexpected %s token: '%s'", name.typ, name.value)
 		}
 	}
 
-	return svc, nil
+	return &svc, nil
 }
 
-func gatherPub(name token, tokens []token) (ast.Pub, error) {
+func gatherPub(name token, tokens []token) (*ast.Pub, error) {
 	if len(tokens) != 1 {
-		return ast.Pub{}, fmt.Errorf("token mismatch: need 1 message")
+		return nil, fmt.Errorf("token mismatch: need 1 message")
 	}
 
 	msg := tokens[0]
 	if msg.typ != parsegen.PubMessage {
-		return ast.Pub{}, fmt.Errorf("unexpected token for pub message: %s", msg.typ)
+		return nil, fmt.Errorf("unexpected token for pub message: %s", msg.typ)
 	}
-	return ast.Pub{
+	return &ast.Pub{
 		Name:    name.value,
 		Message: msg.value,
 	}, nil
 }
 
-func gatherRpc(name token, tokens []token) (ast.Rpc, error) {
+func gatherRpc(name token, tokens []token) (*ast.Rpc, error) {
 	if len(tokens) != 2 {
-		return ast.Rpc{}, fmt.Errorf("token mismatch: need 1 request and 1 response")
+		return nil, fmt.Errorf("token mismatch: need 1 request and 1 response")
 	}
 
 	req := tokens[0]
 	if req.typ != parsegen.RpcRequest {
-		return ast.Rpc{}, fmt.Errorf("unexpected token for rpc request: %s", req.typ)
+		return nil, fmt.Errorf("unexpected token for rpc request: %s", req.typ)
 	}
 
 	res := tokens[1]
 	if res.typ != parsegen.RpcResponse {
-		return ast.Rpc{}, fmt.Errorf("unexpected token for rpc response: %s", res.typ)
+		return nil, fmt.Errorf("unexpected token for rpc response: %s", res.typ)
 	}
 
-	return ast.Rpc{
+	return &ast.Rpc{
 		Name:     name.value,
 		Request:  req.value,
 		Response: res.value,
 	}, nil
 }
 
-func gatherMessage(name token, tokens []token) (ast.Message, error) {
-	svc := ast.Message{
+func gatherMessage(name token, tokens []token) (*ast.Message, error) {
+	msg := ast.Message{
 		Name:   name.value,
-		Fields: make([]ast.Field, 0),
+		Fields: make([]*ast.Field, 0),
 	}
 
 	for _, field := range partition(tokens, func(typ parsegen.NodeType) bool {
@@ -229,24 +263,24 @@ func gatherMessage(name token, tokens []token) (ast.Message, error) {
 		case parsegen.FieldName:
 			fld, err := gatherField(field[0], field[1:])
 			if err != nil {
-				return ast.Message{}, fmt.Errorf("field %s: %w", field[0].value, err)
+				return nil, fmt.Errorf("field %s: %w", field[0].value, err)
 			}
-			svc.Fields = append(svc.Fields, fld)
+			msg.Fields = append(msg.Fields, fld)
 		default:
-			return ast.Message{}, fmt.Errorf("unexpected %s token: '%s'", field[0].typ, field[0].value)
+			return nil, fmt.Errorf("unexpected %s token: '%s'", field[0].typ, field[0].value)
 		}
 	}
 
-	return svc, nil
+	return &msg, nil
 }
 
-func gatherField(name token, tokens []token) (ast.Field, error) {
+func gatherField(name token, tokens []token) (*ast.Field, error) {
 	typ, err := gatherFieldType(tokens)
 	if err != nil {
-		return ast.Field{}, err
+		return nil, err
 	}
 
-	return ast.Field{
+	return &ast.Field{
 		Name:     name.value,
 		Type:     typ,
 		Optional: isOptional(tokens),
@@ -261,12 +295,12 @@ func gatherFieldType(tokens []token) (ast.Type, error) {
 		}, nil
 	case parsegen.MapKeyType:
 		return ast.MapType{
-			KeyType:   ast.ScalarType{Name: tokens[0].value},
-			ValueType: ast.ScalarType{Name: tokens[1].value},
+			KeyType:   &ast.ScalarType{Name: tokens[0].value},
+			ValueType: &ast.ScalarType{Name: tokens[1].value},
 		}, nil
 	case parsegen.ListElement:
 		return ast.ListType{
-			ElementType: ast.ScalarType{Name: tokens[0].value},
+			ElementType: &ast.ScalarType{Name: tokens[0].value},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unexpected field type: %s", tokens[0].typ.String())

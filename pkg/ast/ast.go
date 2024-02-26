@@ -1,20 +1,20 @@
 package ast
 
 type File struct {
-	Options  []Option  `json:"options"`
-	Messages []Message `json:"types"`
-	Enums    []Enum    `json:"enums"`
-	Services []Service `json:"services"`
+	Options  []*Option[any] `json:"options"`
+	Messages []*Message     `json:"types"`
+	Enums    []*Enum        `json:"enums"`
+	Services []*Service     `json:"services"`
 }
 
-type Option struct {
+type Option[T any] struct {
 	Name  string `json:"name"`
-	Value string `json:"value"`
+	Value T      `json:"value"`
 }
 
 type Message struct {
-	Name   string  `json:"name"`
-	Fields []Field `json:"fields"`
+	Name   string   `json:"name"`
+	Fields []*Field `json:"fields"`
 }
 
 type Field struct {
@@ -24,12 +24,12 @@ type Field struct {
 }
 
 type MapType struct {
-	KeyType   ScalarType `json:"key"`
-	ValueType ScalarType `json:"value"`
+	KeyType   *ScalarType `json:"key"`
+	ValueType *ScalarType `json:"value"`
 }
 
 type ListType struct {
-	ElementType ScalarType `json:"element"`
+	ElementType *ScalarType `json:"element"`
 }
 
 type ScalarType struct {
@@ -38,8 +38,8 @@ type ScalarType struct {
 
 type Service struct {
 	Name string `json:"name"`
-	Rpcs []Rpc  `json:"rpcs"`
-	Pubs []Pub  `json:"pubs"`
+	Rpcs []*Rpc `json:"rpcs"`
+	Pubs []*Pub `json:"pubs"`
 }
 
 type Rpc struct {

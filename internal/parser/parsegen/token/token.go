@@ -25,8 +25,6 @@ const (
 	NAME
 	PRIMITIVE
 	MODIFIER
-	MAP    // map
-	LIST   // list
 	LBRACK // [
 	RBRACK // ]
 	COLON  // :
@@ -40,6 +38,9 @@ const (
 	RBRACE    // }
 	ASSIGN    // =
 	STRINGLITERAL
+	BOOLLITERAL
+	INTLITERAL
+	FLOATLITERAL
 
 	NumTokens
 )
@@ -58,8 +59,6 @@ var tokenStr = [...]string{
 	"NAME",
 	"PRIMITIVE",
 	"MODIFIER",
-	"map",
-	"list",
 	"[",
 	"]",
 	":",
@@ -73,6 +72,9 @@ var tokenStr = [...]string{
 	"}",
 	"=",
 	"STRINGLITERAL",
+	"BOOLLITERAL",
+	"INTLITERAL",
+	"FLOATLITERAL",
 }
 
 func (tok Type) String() string {
