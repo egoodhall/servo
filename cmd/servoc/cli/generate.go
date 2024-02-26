@@ -25,7 +25,7 @@ func (gc *generateCmd) Run() error {
 	defer cancel()
 
 	return plugin.RunAll(ctx, func(name string, client plugin.Client) error {
-		response, err := client.Generate(&ipc.GenerateRequest{
+		_, err := client.Generate(&ipc.GenerateRequest{
 			Options: plugin.ToOptions(gc.Options),
 			Files:   files,
 		})
@@ -33,7 +33,6 @@ func (gc *generateCmd) Run() error {
 			return fmt.Errorf("generate: %w", err)
 		}
 
-		fmt.Println(response)
 		return nil
 	})
 }

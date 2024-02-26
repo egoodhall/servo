@@ -1,6 +1,7 @@
 package ast
 
 type File struct {
+	Name     string         `json:"name"`
 	Options  []*Option[any] `json:"options"`
 	Messages []*Message     `json:"types"`
 	Enums    []*Enum        `json:"enums"`

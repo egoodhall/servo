@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ import (
 	"github.com/egoodhall/servo/pkg/ast"
 )
 
-func Files[T io.Reader](in ...T) ([]*ast.File, error) {
+func Files(in ...*os.File) ([]*ast.File, error) {
 	files := make([]*ast.File, len(in))
 	var err error
 	for i, rd := range in {
@@ -25,7 +26,7 @@ func Files[T io.Reader](in ...T) ([]*ast.File, error) {
 	return files, nil
 }
 
-func File(in io.Reader) (*ast.File, error) {
+func File(in *os.File) (*ast.File, error) {
 	data, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err
@@ -55,6 +56,7 @@ func File(in io.Reader) (*ast.File, error) {
 		return f, err
 	}
 
+	f.Name = in.Name()
 	return f, validate.File(f)
 }
 

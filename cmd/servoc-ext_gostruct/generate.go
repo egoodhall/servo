@@ -1,36 +1,36 @@
 package main
 
 import (
+	"fmt"
 	"github.com/dave/jennifer/jen"
 	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/iancoleman/strcase"
 	"os"
 )
 
-type GenerateOptions struct {
-	Enabled bool   `json:"enabled" default:"false" desc:"If false, the gostruct plugin will not generate code"`
-	Package string `json:"package" desc:"The name of the package to use for the generated go file"`
-	File    string `json:"file" default:"." desc:"The directory to generate code in"`
-}
-
-func (x *GoJsonPlugin) Generate(file *ast.File, options GenerateOptions) error {
+func (x *GoJsonPlugin) Generate(file *ast.File, options Options) error {
 	if !options.Enabled {
 		return nil
 	}
+
+	fmt.Printf("%+v\n", options)
 
 	content, err := generateFile(file, options)
 	if err != nil {
 		return err
 	}
 
-	if err := content.Render(os.Stderr); err != nil {
+	f, err := os.OpenFile(options.File, os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
 		return err
 	}
-	return nil
+	defer f.Close()
+
+	return content.Render(f)
 }
 
-func generateFile(file *ast.File, options GenerateOptions) (*jen.File, error) {
-	gofile := jen.NewFile("servoc")
+func generateFile(file *ast.File, options Options) (*jen.File, error) {
+	gofile := jen.NewFile(options.Package)
 
 	for _, message := range file.Messages {
 		gofile.Type().Id(strcase.ToCamel(message.Name)).StructFunc(func(g *jen.Group) {
@@ -62,10 +62,10 @@ func generateFile(file *ast.File, options GenerateOptions) (*jen.File, error) {
 			for _, rpc := range svc.Rpcs {
 				g.Id(strcase.ToCamel(rpc.Name)).
 					Params(jen.Op("*").Id(strcase.ToCamel(rpc.Request))).
-					Params(jen.Op("*").Id(strcase.ToCamel(rpc.Response)), jen.Err())
+					Params(jen.Op("*").Id(strcase.ToCamel(rpc.Response)), jen.Error())
 			}
 			for _, pub := range svc.Pubs {
-				g.Id(strcase.ToCamel(pub.Name)).Params(jen.Op("*").Id(strcase.ToCamel(pub.Message))).Err()
+				g.Id(strcase.ToCamel(pub.Name)).Params(jen.Op("*").Id(strcase.ToCamel(pub.Message))).Error()
 			}
 		})
 	}

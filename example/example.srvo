@@ -3,9 +3,7 @@
  *----------------------------------*/
 
 // Options can be specified
-option gojson.enabled = "true";
-option gojson.package = "github.com/egoodhall/servo/example";
-option javajson.package = "com.egoodhall.servo.example"; 
+option gostruct.package = "example";
 
 // A request to echo a message
 message EchoRequest {
