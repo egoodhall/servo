@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -18,7 +17,7 @@ func Files(in ...*os.File) ([]*ast.File, error) {
 	files := make([]*ast.File, len(in))
 	var err error
 	for i, rd := range in {
-		files[i], err = File(rd)
+		files[i], err = File(rd.Name(), rd)
 		if err != nil {
 			return nil, err
 		}
@@ -26,7 +25,7 @@ func Files(in ...*os.File) ([]*ast.File, error) {
 	return files, nil
 }
 
-func File(in *os.File) (*ast.File, error) {
+func File(name string, in io.Reader) (*ast.File, error) {
 	data, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err
@@ -56,7 +55,7 @@ func File(in *os.File) (*ast.File, error) {
 		return f, err
 	}
 
-	f.Name = in.Name()
+	f.Name = name
 	return f, validate.File(f)
 }
 
@@ -134,8 +133,6 @@ func gather(tokens []token) (*ast.File, error) {
 	}
 	return &file, nil
 }
-
-var intPattern = regexp.MustCompile("")
 
 func gatherOption(name token, tokens []token) (*ast.Option[any], error) {
 	if len(tokens) != 1 {

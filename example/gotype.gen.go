@@ -20,8 +20,8 @@ type Metric struct {
 type MetricType string
 
 const (
-	Counter MetricType = "COUNTER"
-	Gauge   MetricType = "GAUGE"
+	MetricType_Counter MetricType = "COUNTER"
+	MetricType_Gauge   MetricType = "GAUGE"
 )
 
 type EchoService interface {

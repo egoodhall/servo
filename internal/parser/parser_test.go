@@ -22,10 +22,10 @@ func TestParsesTypes(t *testing.T) {
 
 	testutil.HasOnlyMessage(t, file, ast.Message{
 		Name: "Request",
-		Fields: []ast.Field{
-			{Name: "message", Type: ast.Type{Type: "string"}},
-			{Name: "size", Type: ast.Type{Type: "int32"}},
-			{Name: "createdAt", Type: ast.Type{Type: "int64"}},
+		Fields: []*ast.Field{
+			{Name: "message", Type: ast.ScalarType{Name: "string"}},
+			{Name: "size", Type: ast.ScalarType{Name: "int32"}},
+			{Name: "createdAt", Type: ast.ScalarType{Name: "int64"}},
 		},
 	})
 }
@@ -36,7 +36,7 @@ func TestParsesOptions(t *testing.T) {
 		option go_package = "github.com/egoodhall/servo";
 	`)
 
-	testutil.HasOnlyOption(t, file, ast.Option{
+	testutil.HasOnlyOption(t, file, ast.Option[string]{
 		Name:  "go_package",
 		Value: "github.com/egoodhall/servo",
 	})
@@ -53,7 +53,7 @@ func TestParsesRpcServices(t *testing.T) {
 
 	testutil.HasOnlyService(t, file, ast.Service{
 		Name: "EchoService",
-		Rpcs: []ast.Rpc{
+		Rpcs: []*ast.Rpc{
 			{
 				Name:     "echo",
 				Request:  "EchoRequest",
@@ -73,7 +73,7 @@ func TestParsesPublisherServices(t *testing.T) {
 
 	testutil.HasOnlyService(t, file, ast.Service{
 		Name: "PublisherService",
-		Pubs: []ast.Pub{
+		Pubs: []*ast.Pub{
 			{
 				Name:    "publish",
 				Message: "Message",
@@ -109,35 +109,35 @@ func TestParsesEverything(t *testing.T) {
 
 	testutil.HasMessage(t, file, ast.Message{
 		Name: "EchoRequest",
-		Fields: []ast.Field{
-			{Name: "message", Type: ast.Type{Type: "string"}},
+		Fields: []*ast.Field{
+			{Name: "message", Type: ast.ScalarType{Name: "string"}},
 		},
 	})
 
 	testutil.HasMessage(t, file, ast.Message{
 		Name: "EchoResponse",
-		Fields: []ast.Field{
-			{Name: "message", Type: ast.Type{Type: "string"}},
+		Fields: []*ast.Field{
+			{Name: "message", Type: ast.ScalarType{Name: "string"}},
 		},
 	})
 
 	testutil.HasService(t, file, ast.Service{
 		Name: "EchoService",
-		Rpcs: []ast.Rpc{
+		Rpcs: []*ast.Rpc{
 			{Name: "echo", Request: "EchoRequest", Response: "EchoResponse"},
 		},
 	})
 
 	testutil.HasMessage(t, file, ast.Message{
 		Name: "Message",
-		Fields: []ast.Field{
-			{Name: "message", Type: ast.Type{Type: "string"}},
+		Fields: []*ast.Field{
+			{Name: "message", Type: ast.ScalarType{Name: "string"}},
 		},
 	})
 
 	testutil.HasService(t, file, ast.Service{
 		Name: "PublisherService",
-		Pubs: []ast.Pub{
+		Pubs: []*ast.Pub{
 			{Name: "publish", Message: "Message"},
 		},
 	})

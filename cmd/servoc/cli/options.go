@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+
 	"github.com/egoodhall/servo/internal/cliutil"
 	"github.com/egoodhall/servo/internal/plugin"
 )

@@ -5,7 +5,7 @@ import (
 	"github.com/egoodhall/servo/pkg/plugin"
 )
 
-func (x *GoJsonPlugin) Info() (*ipc.InfoResponse, error) {
+func (x *GoStructPlugin) Info() (*ipc.InfoResponse, error) {
 	options, err := plugin.ReadOptionsDescriptor[Options]()
 	if err != nil {
 		return nil, err

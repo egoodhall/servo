@@ -3,7 +3,8 @@
  *----------------------------------*/
 
 // Options can be specified
-option gostruct.package = "example";
+option gotype.package = "example";
+option goecho.package = "example";
 
 // A request to echo a message
 message EchoRequest {

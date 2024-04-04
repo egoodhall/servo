@@ -1,26 +1,24 @@
 package main
 
 import (
-	"fmt"
+	"os"
+
 	"github.com/dave/jennifer/jen"
 	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/iancoleman/strcase"
-	"os"
 )
 
-func (x *GoJsonPlugin) Generate(file *ast.File, options Options) error {
+func (x *GoStructPlugin) Generate(file *ast.File, options Options) error {
 	if !options.Enabled {
 		return nil
 	}
-
-	fmt.Printf("%+v\n", options)
 
 	content, err := generateFile(file, options)
 	if err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(options.File, os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(options.File, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -53,7 +51,7 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 		gofile.Type().Id(strcase.ToCamel(enum.Name)).String()
 		gofile.Const().DefsFunc(func(g *jen.Group) {
 			for _, value := range enum.Values {
-				g.Id(strcase.ToCamel(value)).Id(strcase.ToCamel(enum.Name)).Op("=").Lit(value)
+				g.Id(enum.Name + "_" + strcase.ToCamel(value)).Id(strcase.ToCamel(enum.Name)).Op("=").Lit(value)
 			}
 		})
 	}
