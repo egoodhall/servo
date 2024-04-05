@@ -3,7 +3,8 @@ package ast
 type File struct {
 	Name     string         `json:"name"`
 	Options  []*Option[any] `json:"options"`
-	Messages []*Message     `json:"types"`
+	Messages []*Message     `json:"messages"`
+	Unions   []*Union       `json:"unions"`
 	Enums    []*Enum        `json:"enums"`
 	Services []*Service     `json:"services"`
 }
@@ -16,6 +17,16 @@ type Option[T any] struct {
 type Message struct {
 	Name   string   `json:"name"`
 	Fields []*Field `json:"fields"`
+}
+
+type Union struct {
+	Name    string    `json:"name"`
+	Members []*Member `json:"fields"`
+}
+
+type Member struct {
+	Name string     `json:"name"`
+	Type ScalarType `json:"type"`
 }
 
 type Field struct {
@@ -40,18 +51,12 @@ type ScalarType struct {
 type Service struct {
 	Name string `json:"name"`
 	Rpcs []*Rpc `json:"rpcs"`
-	Pubs []*Pub `json:"pubs"`
 }
 
 type Rpc struct {
 	Name     string `json:"name"`
 	Request  string `json:"request"`
 	Response string `json:"response"`
-}
-
-type Pub struct {
-	Name    string `json:"name"`
-	Message string `json:"message"`
 }
 
 type Enum struct {

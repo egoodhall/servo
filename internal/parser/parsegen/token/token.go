@@ -16,6 +16,7 @@ const (
 	INVALID_TOKEN
 	ENUM    // enum
 	MESSAGE // message
+	UNION   // union
 	SERVICE // service
 	OPTION  // option
 	WS
@@ -29,7 +30,6 @@ const (
 	RBRACK // ]
 	COLON  // :
 	RPC    // rpc
-	PUB    // pub
 	LPAREN // (
 	RPAREN // )
 	VALUE
@@ -50,6 +50,7 @@ var tokenStr = [...]string{
 	"INVALID_TOKEN",
 	"enum",
 	"message",
+	"union",
 	"service",
 	"option",
 	"WS",
@@ -63,7 +64,6 @@ var tokenStr = [...]string{
 	"]",
 	":",
 	"rpc",
-	"pub",
 	"(",
 	")",
 	"VALUE",

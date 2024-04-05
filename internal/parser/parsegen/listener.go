@@ -25,13 +25,12 @@ const (
 	OptionInt
 	OptionName
 	OptionString
-	PubMessage
-	PubName
 	RpcName
 	RpcRequest
 	RpcResponse
 	ScalarType
 	ServiceName
+	UnionName
 	NodeTypeMax
 )
 
@@ -50,13 +49,12 @@ var nodeTypeStr = [...]string{
 	"OptionInt",
 	"OptionName",
 	"OptionString",
-	"PubMessage",
-	"PubName",
 	"RpcName",
 	"RpcRequest",
 	"RpcResponse",
 	"ScalarType",
 	"ServiceName",
+	"UnionName",
 }
 
 func (t NodeType) String() string {

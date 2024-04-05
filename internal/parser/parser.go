@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/egoodhall/servo/internal/parser/parsegen"
-	"github.com/egoodhall/servo/internal/validate"
 	"github.com/egoodhall/servo/pkg/ast"
 )
 
@@ -50,18 +49,24 @@ func File(name string, in io.Reader) (*ast.File, error) {
 		return nil, errors.New("syntax error")
 	}
 
+	if err := validateTokens(name, tc.tokens); err != nil {
+		return nil, err
+	}
+
 	f, err := gather(tc.tokens)
 	if err != nil {
 		return f, err
 	}
 
 	f.Name = name
-	return f, validate.File(f)
+	return f, validateAst(f)
 }
 
 type token struct {
 	typ   parsegen.NodeType
 	value string
+	line  int
+	col   int
 }
 
 func (t token) String() string {
@@ -81,9 +86,22 @@ func (tc *tokenCollector) HandleError(err parsegen.SyntaxError) bool {
 }
 
 func (tc *tokenCollector) Collect(typ parsegen.NodeType, frm, to int) {
+	var line, col int
+	lineStart := strings.LastIndex(tc.input[0:frm], "\n")
+
+	if lineStart < 0 {
+		line = 1
+		col = frm
+	} else {
+		line = strings.Count(tc.input[0:frm], "\n") + 1
+		col = frm - lineStart
+	}
+
 	tc.tokens = append(tc.tokens, token{
 		typ:   typ,
 		value: tc.input[frm:to],
+		line:  line,
+		col:   col,
 	})
 }
 
@@ -97,6 +115,7 @@ func gather(tokens []token) (*ast.File, error) {
 
 	tokenGroups := partition(tokens, func(typ parsegen.NodeType) bool {
 		return typ == parsegen.MessageName ||
+			typ == parsegen.UnionName ||
 			typ == parsegen.ServiceName ||
 			typ == parsegen.OptionName ||
 			typ == parsegen.EnumName
@@ -122,6 +141,12 @@ func gather(tokens []token) (*ast.File, error) {
 				return nil, err
 			}
 			file.Messages = append(file.Messages, msg)
+		case parsegen.UnionName:
+			uni, err := gatherUnion(tkns[0], tkns[1:])
+			if err != nil {
+				return nil, err
+			}
+			file.Unions = append(file.Unions, uni)
 		case parsegen.EnumName:
 			file.Enums = append(file.Enums, &ast.Enum{
 				Name:   tkns[0].value,
@@ -180,20 +205,10 @@ func gatherService(name token, tokens []token) (*ast.Service, error) {
 	}
 
 	for _, method := range partition(tokens, func(typ parsegen.NodeType) bool {
-		return typ == parsegen.PubName || typ == parsegen.RpcName
+		return typ == parsegen.RpcName
 	}) {
 		name := method[0]
 		switch name.typ {
-		case parsegen.PubName:
-			pub, err := gatherPub(name, method[1:])
-			if err != nil {
-				return nil, fmt.Errorf("method %s: %w", name.value, err)
-			}
-			if svc.Pubs == nil {
-				svc.Pubs = []*ast.Pub{pub}
-			} else {
-				svc.Pubs = append(svc.Pubs, pub)
-			}
 		case parsegen.RpcName:
 			rpc, err := gatherRpc(name, method[1:])
 			if err != nil {
@@ -212,32 +227,25 @@ func gatherService(name token, tokens []token) (*ast.Service, error) {
 	return &svc, nil
 }
 
-func gatherPub(name token, tokens []token) (*ast.Pub, error) {
-	if len(tokens) != 1 {
-		return nil, fmt.Errorf("token mismatch: need 1 message")
-	}
-
-	msg := tokens[0]
-	if msg.typ != parsegen.PubMessage {
-		return nil, fmt.Errorf("unexpected token for pub message: %s", msg.typ)
-	}
-	return &ast.Pub{
-		Name:    name.value,
-		Message: msg.value,
-	}, nil
-}
-
 func gatherRpc(name token, tokens []token) (*ast.Rpc, error) {
-	if len(tokens) != 2 {
-		return nil, fmt.Errorf("token mismatch: need 1 request and 1 response")
+	if len(tokens) < 1 || len(tokens) > 2 {
+		return nil, fmt.Errorf("token mismatch: need 1 request and optionally 1 response")
 	}
+	var req, res token
 
-	req := tokens[0]
+	req = tokens[0]
 	if req.typ != parsegen.RpcRequest {
 		return nil, fmt.Errorf("unexpected token for rpc request: %s", req.typ)
 	}
 
-	res := tokens[1]
+	if len(tokens) != 2 {
+		return &ast.Rpc{
+			Name:    name.value,
+			Request: req.value,
+		}, nil
+	}
+
+	res = tokens[1]
 	if res.typ != parsegen.RpcResponse {
 		return nil, fmt.Errorf("unexpected token for rpc response: %s", res.typ)
 	}
@@ -271,6 +279,44 @@ func gatherMessage(name token, tokens []token) (*ast.Message, error) {
 	}
 
 	return &msg, nil
+}
+
+func gatherUnion(name token, tokens []token) (*ast.Union, error) {
+	uni := ast.Union{
+		Name:    name.value,
+		Members: make([]*ast.Member, 0),
+	}
+
+	for _, field := range partition(tokens, func(typ parsegen.NodeType) bool {
+		return typ == parsegen.FieldName
+	}) {
+		switch field[0].typ {
+		case parsegen.FieldName:
+			mem, err := gatherMember(field[0], field[1:])
+			if err != nil {
+				return nil, fmt.Errorf("field %s: %w", field[0].value, err)
+			}
+			uni.Members = append(uni.Members, mem)
+		default:
+			return nil, fmt.Errorf("unexpected %s token: '%s'", field[0].typ, field[0].value)
+		}
+	}
+
+	return &uni, nil
+}
+
+func gatherMember(name token, tokens []token) (*ast.Member, error) {
+	switch tokens[0].typ {
+	case parsegen.ScalarType:
+		return &ast.Member{
+			Name: name.value,
+			Type: ast.ScalarType{
+				Name: tokens[0].value,
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unexpected field type: %s", tokens[0].typ.String())
+	}
 }
 
 func gatherField(name token, tokens []token) (*ast.Field, error) {

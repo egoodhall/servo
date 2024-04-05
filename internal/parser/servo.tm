@@ -6,7 +6,7 @@ package = "github.com/egoodhall/servo/internal/parser/parsegen"
 
 :: lexer
 
-%x initial,inMessageDefinition,inServiceDefinition,inEnumDefinition,inOption;
+%x initial,inMessageDefinition,inUnionDefinition,inServiceDefinition,inEnumDefinition,inOption;
 
 ident = /[a-zA-Z_][a-zA-Z0-9_]+/
 
@@ -18,6 +18,7 @@ boolLiteral = /true|false/
 <initial> {
   'enum': /enum/ { l.State = StateInEnumDefinition }
   'message': /message/ { l.State = StateInMessageDefinition }
+  'union': /union/ { l.State = StateInUnionDefinition }
   'service': /service/ { l.State = StateInServiceDefinition }
   'option': /option/ { l.State = StateInOption }
 }
@@ -31,7 +32,7 @@ boolLiteral = /true|false/
 
 <inMessageDefinition> {
   Name: /{ident}/
-  Primitive: /string|int64|int32|float32|float64/ 1
+  Primitive: /string|int64|int32|float32|float64|bool/ 1
   Modifier: /[?!]/
   '[': /\[/
   ']': /\]/
@@ -41,9 +42,12 @@ boolLiteral = /true|false/
 <inServiceDefinition> {
   Name: /{ident}/ (class)
   'rpc': /rpc/
-  'pub': /pub/
   '(': /\(/
   ')': /\)/
+}
+
+<inUnionDefinition> {
+  Name: /{ident}/
 }
 
 <inEnumDefinition> {
@@ -51,11 +55,11 @@ boolLiteral = /true|false/
   Value: /[A-Z][A-Z0-9_]+/ 1
 }
 
-<inMessageDefinition,inServiceDefinition> {
+<inMessageDefinition,inUnionDefinition,inServiceDefinition> {
   ':': /:/
 }
 
-<inMessageDefinition,inServiceDefinition,inEnumDefinition> {
+<inMessageDefinition,inUnionDefinition,inServiceDefinition,inEnumDefinition> {
   ';': /;/
   '{': /\{/
   '}': /\}/ { l.State = StateInitial }
@@ -103,16 +107,19 @@ FieldDefList: (FieldDef | FieldDef WhiteSpace);
 MessageName -> MessageName: Name;
 MessageDef: 'message' MessageName WhiteSpace? '{' WhiteSpace? FieldDefList* '}';
 
+# Union Definitions
+UnionMemberName -> FieldName: Name;
+UnionMemberType -> ScalarType: TypeRef;
+UnionMember: (UnionMemberName WhiteSpace? ':' WhiteSpace? UnionMemberType WhiteSpace? ';') | error  (';'|'}');
+UnionMemberList: (UnionMember | UnionMember WhiteSpace);
+UnionName -> UnionName: Name;
+UnionDef: 'union' UnionName WhiteSpace? '{' WhiteSpace? UnionMemberList* '}';
+
 # Service Definitions
 RpcName -> RpcName: Name;
 RpcRequest -> RpcRequest: TypeRef;
 RpcResponse -> RpcResponse: TypeRef;
-RpcMethod: 'rpc' RpcName WhiteSpace? '(' WhiteSpace? RpcRequest  WhiteSpace? ')'  WhiteSpace? ':'  WhiteSpace? RpcResponse  WhiteSpace? ';';
-PubName -> PubName: Name;
-PubMessage -> PubMessage: TypeRef;
-PubMethod: 'pub' PubName WhiteSpace? '(' WhiteSpace? PubMessage WhiteSpace? ')' WhiteSpace? ';';
-Method: PubMethod | RpcMethod | error  (';'|'}');
- 
+Method: 'rpc' RpcName WhiteSpace? '(' WhiteSpace? RpcRequest  WhiteSpace? ')'  (WhiteSpace? ':'  WhiteSpace? RpcResponse)? WhiteSpace? ';';
 MethodList: (Method | Method WhiteSpace);
 ServiceName -> ServiceName: Name;
 ServiceDef: 'service' ServiceName WhiteSpace? '{' WhiteSpace? MethodList+ '}';
@@ -125,7 +132,7 @@ EnumValueList: (EnumField | EnumField WhiteSpace);
 EnumDef: 'enum' EnumName WhiteSpace? '{' WhiteSpace? EnumValueList+ '}';
 
 # Elements
-Definition: MessageDef | ServiceDef | EnumDef | Option | error (';'|'}');
+Definition: MessageDef | UnionDef | ServiceDef | EnumDef | Option | error (';'|'}');
 DefinitionList: (Definition | Definition WhiteSpace);
 
 #File Definition

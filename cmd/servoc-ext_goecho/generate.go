@@ -15,6 +15,7 @@ const (
 	pkgHttp      = "net/http"
 	pkgGentleman = "gopkg.in/h2non/gentleman.v2"
 	pkgUrl       = "net/url"
+	pkgContext   = "context"
 )
 
 func (x *GoNrpcPlugin) Generate(file *ast.File, options Options) error {
@@ -45,6 +46,7 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 		names := getServiceNames(svc.Name)
 
 		gofile.ImportNames(map[string]string{
+			pkgContext:   "context",
 			pkgEcho:      "echo",
 			pkgHttp:      "http",
 			pkgGentleman: "gentleman",
@@ -56,7 +58,7 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 			Op("*").Qual(pkgEcho, "Echo").
 			Block(
 				jen.Id("server").Op(":=").Qual(pkgEcho, "New").Params(),
-				jen.Id(names.RegisterFunc).Params(jen.Id("service"), jen.Id("server")),
+				jen.Id(names.RegisterFunc).Params(jen.Id("service"), jen.Id("server").Dot("Group").Params(jen.Lit("/"))),
 				jen.Return(jen.Id("server")),
 			)
 
@@ -65,21 +67,21 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 		gofile.Func().Id(names.RegisterFunc).
 			Params(
 				jen.Id("service").Id(names.Service),
-				jen.Id("server").Op("*").Qual(pkgEcho, "Echo"),
+				jen.Id("server").Op("*").Qual(pkgEcho, "Group"),
 			).
 			BlockFunc(func(g *jen.Group) {
 				for _, rpc := range svc.Rpcs {
-					g.Id("server").Dot("POST").Params(
-						jen.Lit(fmt.Sprintf("%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name))),
-						generateRpcHandler(rpc),
-					)
-				}
-
-				for _, pub := range svc.Pubs {
-					g.Id("server").Dot("POST").Params(
-						jen.Lit(fmt.Sprintf("%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(pub.Name))),
-						generatePubHandler(pub),
-					)
+					if rpc.Response != "" {
+						g.Id("server").Dot("POST").Params(
+							jen.Lit(fmt.Sprintf("%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name))),
+							generateRpcHandler(rpc),
+						)
+					} else {
+						g.Id("server").Dot("POST").Params(
+							jen.Lit(fmt.Sprintf("%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name))),
+							generatePubHandler(rpc),
+						)
+					}
 				}
 			})
 
@@ -105,6 +107,10 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 
 		gofile.Line()
 
+		gofile.Var().Id("_").Id(names.Service).Op("=").New(jen.Id(names.ClientImpl))
+
+		gofile.Line()
+
 		gofile.Type().Id(names.ClientImpl).Struct(
 			jen.Id("delegate").Op("*").Qual(pkgGentleman, "Client"),
 		)
@@ -112,37 +118,39 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 		gofile.Line()
 
 		for _, rpc := range svc.Rpcs {
-			gofile.Func().Params(jen.Id("client").Op("*").Id(names.ClientImpl)).
-				Id(strcase.ToCamel(rpc.Name)).
-				Params(jen.Id("request").Op("*").Id(rpc.Request)).
-				Params(jen.Op("*").Id(rpc.Response), jen.Error()).
-				Block(
-					jen.Id("req").Op(":=").Id("client").Dot("delegate").
-						Dot("Post").Params().
-						Dot("Path").Params(jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name)))).
-						Dot("JSON").Params(jen.Id("request")),
-					jen.List(jen.Id("res"), jen.Err()).Op(":=").Id("req").Dot("Do").Params(),
-					jen.If(jen.Err().Op("!=").Nil()).Block(
-						jen.Return(jen.Nil(), jen.Err()),
-					),
-					jen.Id("response").Op(":=").New(jen.Id(rpc.Response)),
-					jen.Return(jen.Id("response"), jen.Id("res").Dot("JSON").Params(jen.Id("response"))),
-				)
-		}
-
-		for _, pub := range svc.Pubs {
-			gofile.Func().Params(jen.Id("client").Op("*").Id(names.ClientImpl)).
-				Id(strcase.ToCamel(pub.Name)).
-				Params(jen.Id("request").Op("*").Id(pub.Message)).
-				Error().
-				Block(
-					jen.Id("req").Op(":=").Id("client").Dot("delegate").
-						Dot("Post").Params().
-						Dot("Path").Params(jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(pub.Name)))).
-						Dot("JSON").Params(jen.Id("request")),
-					jen.List(jen.Id("_"), jen.Err()).Op(":=").Id("req").Dot("Do").Params(),
-					jen.Return(jen.Err()),
-				)
+			if rpc.Response != "" {
+				gofile.Func().Params(jen.Id("client").Op("*").Id(names.ClientImpl)).
+					Id(strcase.ToCamel(rpc.Name)).
+					Params(jen.Id("ctx").Qual(pkgContext, "Context"), jen.Id("request").Op("*").Id(rpc.Request)).
+					Params(jen.Op("*").Id(rpc.Response), jen.Error()).
+					Block(
+						jen.Id("req").Op(":=").Id("client").Dot("delegate").
+							Dot("Post").Params().
+							Dot("Path").Params(jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name)))).
+							Dot("JSON").Params(jen.Id("request")),
+						jen.Id("req").Dot("Context").Dot("SetCancelContext").Params(jen.Id("ctx")),
+						jen.List(jen.Id("res"), jen.Err()).Op(":=").Id("req").Dot("Do").Params(),
+						jen.If(jen.Err().Op("!=").Nil()).Block(
+							jen.Return(jen.Nil(), jen.Err()),
+						),
+						jen.Id("response").Op(":=").New(jen.Id(rpc.Response)),
+						jen.Return(jen.Id("response"), jen.Id("res").Dot("JSON").Params(jen.Id("response"))),
+					)
+			} else {
+				gofile.Func().Params(jen.Id("client").Op("*").Id(names.ClientImpl)).
+					Id(strcase.ToCamel(rpc.Name)).
+					Params(jen.Id("ctx").Qual(pkgContext, "Context"), jen.Id("request").Op("*").Id(rpc.Request)).
+					Error().
+					Block(
+						jen.Id("req").Op(":=").Id("client").Dot("delegate").
+							Dot("Post").Params().
+							Dot("Path").Params(jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name)))).
+							Dot("JSON").Params(jen.Id("request")),
+						jen.Id("req").Dot("Context").Dot("SetCancelContext").Params(jen.Id("ctx")),
+						jen.List(jen.Id("_"), jen.Err()).Op(":=").Id("req").Dot("Do").Params(),
+						jen.Return(jen.Err()),
+					)
+			}
 		}
 	}
 
@@ -159,6 +167,7 @@ func generateRpcHandler(rpc *ast.Rpc) *jen.Statement {
 			jen.Return(jen.Err()),
 		),
 		jen.List(jen.Id("res"), jen.Err()).Op(":=").Id("service").Dot(strcase.ToCamel(rpc.Name)).Params(
+			jen.Id("c").Dot("Request").Params().Dot("Context").Params(),
 			jen.Id("req"),
 		),
 		jen.If(jen.Err().Op("!=").Nil()).Block(
@@ -174,9 +183,9 @@ func generateRpcHandler(rpc *ast.Rpc) *jen.Statement {
 	)
 }
 
-func generatePubHandler(pub *ast.Pub) *jen.Statement {
+func generatePubHandler(pub *ast.Rpc) *jen.Statement {
 	return jen.Func().Params(jen.Id("c").Qual(pkgEcho, "Context")).Error().Block(
-		jen.Id("req").Op(":=").New(jen.Id(pub.Message)),
+		jen.Id("req").Op(":=").New(jen.Id(pub.Request)),
 		jen.If(
 			jen.Err().Op(":=").Id("c").Dot("Bind").Params(jen.Id("req")),
 			jen.Err().Op("!=").Nil(),
@@ -184,6 +193,7 @@ func generatePubHandler(pub *ast.Pub) *jen.Statement {
 			jen.Return(jen.Err()),
 		),
 		jen.Err().Op(":=").Id("service").Dot(strcase.ToCamel(pub.Name)).Params(
+			jen.Id("c").Dot("Request").Params().Dot("Context").Params(),
 			jen.Id("req"),
 		),
 		jen.If(jen.Err().Op("!=").Nil()).Block(

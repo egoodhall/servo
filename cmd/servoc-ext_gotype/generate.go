@@ -34,14 +34,7 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 	for _, message := range file.Messages {
 		gofile.Type().Id(strcase.ToCamel(message.Name)).StructFunc(func(g *jen.Group) {
 			for _, field := range message.Fields {
-				switch ft := field.Type.(type) {
-				case ast.ScalarType:
-					g.Id(strcase.ToCamel(field.Name)).Id(ft.Name).Tag(map[string]string{"json": field.Name})
-				case ast.ListType:
-					g.Id(strcase.ToCamel(field.Name)).Op("[]").Id(ft.ElementType.Name).Tag(map[string]string{"json": field.Name})
-				case ast.MapType:
-					g.Id(strcase.ToCamel(field.Name)).Map(jen.Id(ft.KeyType.Name)).Id(ft.ValueType.Name).Tag(map[string]string{"json": field.Name})
-				}
+				g.Add(renderField(field))
 			}
 		})
 		gofile.Line()
@@ -56,18 +49,56 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 		})
 	}
 
+	for _, union := range file.Unions {
+		gofile.Type().Id(strcase.ToCamel(union.Name)).StructFunc(func(g *jen.Group) {
+			g.Id(union.Name + "Type").String().Tag(map[string]string{"json": "@type"})
+			for _, member := range union.Members {
+				g.Id(strcase.ToCamel(member.Name)).
+					Op("*").Id(member.Type.Name).
+					Tag(map[string]string{"json": member.Name + ",omitempty"})
+			}
+		}).Line()
+	}
+
 	for _, svc := range file.Services {
 		gofile.Type().Id(strcase.ToCamel(svc.Name)).InterfaceFunc(func(g *jen.Group) {
 			for _, rpc := range svc.Rpcs {
-				g.Id(strcase.ToCamel(rpc.Name)).
-					Params(jen.Op("*").Id(strcase.ToCamel(rpc.Request))).
-					Params(jen.Op("*").Id(strcase.ToCamel(rpc.Response)), jen.Error())
+				if rpc.Response != "" {
+					g.Id(strcase.ToCamel(rpc.Name)).
+						Params(jen.Qual("context", "Context"), getMethodType(rpc.Request)).
+						Params(getMethodType(rpc.Response), jen.Error())
+				} else {
+					g.Id(strcase.ToCamel(rpc.Name)).
+						Params(jen.Qual("context", "Context"), getMethodType(rpc.Request)).
+						Error()
+				}
 			}
-			for _, pub := range svc.Pubs {
-				g.Id(strcase.ToCamel(pub.Name)).Params(jen.Op("*").Id(strcase.ToCamel(pub.Message))).Error()
-			}
-		})
+		}).Line()
 	}
 
 	return gofile, nil
+}
+
+func renderField(field *ast.Field) *jen.Statement {
+	switch ft := field.Type.(type) {
+	case ast.ScalarType:
+		s := jen.Id(strcase.ToCamel(field.Name))
+		if field.Optional {
+			s = s.Op("*")
+		}
+		s.Id(ft.Name).Tag(map[string]string{"json": field.Name})
+		return s
+	case ast.ListType:
+		return jen.Id(strcase.ToCamel(field.Name)).Op("[]").Id(ft.ElementType.Name).Tag(map[string]string{"json": field.Name})
+	case ast.MapType:
+		return jen.Id(strcase.ToCamel(field.Name)).Map(jen.Id(ft.KeyType.Name)).Id(ft.ValueType.Name).Tag(map[string]string{"json": field.Name})
+	}
+	return nil
+}
+
+func getMethodType(name string) *jen.Statement {
+	if ast.IsPrimitive(name) {
+		return jen.Id(name)
+	}
+	return jen.Op("*").Id(name)
 }

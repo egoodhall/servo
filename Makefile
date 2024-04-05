@@ -1,13 +1,15 @@
 
-.PHONY: example install-*
+.PHONY: example servoc plugins
 
-example: install-servoc install-plugins
+default: servoc plugins
+
+example: servoc plugins
 	go generate ./example
 
-install-servoc:
+servoc:
 	go generate ./internal/...
 	go install ./cmd/servoc
 
-install-plugins:
+plugins:
 	go install ./cmd/servoc-ext_goecho
 	go install ./cmd/servoc-ext_gotype

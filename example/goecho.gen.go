@@ -2,6 +2,7 @@
 package example
 
 import (
+	"context"
 	"github.com/labstack/echo/v4"
 	"gopkg.in/h2non/gentleman.v2"
 	"net/http"
@@ -9,17 +10,17 @@ import (
 
 func NewEchoServiceHttpServer(service EchoService) *echo.Echo {
 	server := echo.New()
-	RegisterEchoServiceEndpoints(service, server)
+	RegisterEchoServiceEndpoints(service, server.Group("/"))
 	return server
 }
 
-func RegisterEchoServiceEndpoints(service EchoService, server *echo.Echo) {
+func RegisterEchoServiceEndpoints(service EchoService, server *echo.Group) {
 	server.POST("echo-service/echo", func(c echo.Context) error {
 		req := new(EchoRequest)
 		if err := c.Bind(req); err != nil {
 			return err
 		}
-		res, err := service.Echo(req)
+		res, err := service.Echo(c.Request().Context(), req)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
@@ -35,12 +36,15 @@ func NewDelegatingEchoServiceHttpClient(delegate *gentleman.Client) EchoService 
 	return &echoServiceHttpClient{delegate}
 }
 
+var _ EchoService = new(echoServiceHttpClient)
+
 type echoServiceHttpClient struct {
 	delegate *gentleman.Client
 }
 
-func (client *echoServiceHttpClient) Echo(request *EchoRequest) (*EchoResponse, error) {
+func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequest) (*EchoResponse, error) {
 	req := client.delegate.Post().Path("/echo-service/echo").JSON(request)
+	req.Context.SetCancelContext(ctx)
 	res, err := req.Do()
 	if err != nil {
 		return nil, err
@@ -48,19 +52,19 @@ func (client *echoServiceHttpClient) Echo(request *EchoRequest) (*EchoResponse, 
 	response := new(EchoResponse)
 	return response, res.JSON(response)
 }
-func NewMetricsPublisherHttpServer(service MetricsPublisher) *echo.Echo {
+func NewTelemetryServiceHttpServer(service TelemetryService) *echo.Echo {
 	server := echo.New()
-	RegisterMetricsPublisherEndpoints(service, server)
+	RegisterTelemetryServiceEndpoints(service, server.Group("/"))
 	return server
 }
 
-func RegisterMetricsPublisherEndpoints(service MetricsPublisher, server *echo.Echo) {
-	server.POST("metrics-publisher/publish", func(c echo.Context) error {
-		req := new(Metric)
+func RegisterTelemetryServiceEndpoints(service TelemetryService, server *echo.Group) {
+	server.POST("telemetry-service/publish", func(c echo.Context) error {
+		req := new(Telemetry)
 		if err := c.Bind(req); err != nil {
 			return err
 		}
-		err := service.Publish(req)
+		err := service.Publish(c.Request().Context(), req)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
@@ -68,20 +72,23 @@ func RegisterMetricsPublisherEndpoints(service MetricsPublisher, server *echo.Ec
 	})
 }
 
-func NewMetricsPublisherHttpClient() MetricsPublisher {
-	return NewDelegatingMetricsPublisherHttpClient(gentleman.New())
+func NewTelemetryServiceHttpClient() TelemetryService {
+	return NewDelegatingTelemetryServiceHttpClient(gentleman.New())
 }
 
-func NewDelegatingMetricsPublisherHttpClient(delegate *gentleman.Client) MetricsPublisher {
-	return &metricsPublisherHttpClient{delegate}
+func NewDelegatingTelemetryServiceHttpClient(delegate *gentleman.Client) TelemetryService {
+	return &telemetryServiceHttpClient{delegate}
 }
 
-type metricsPublisherHttpClient struct {
+var _ TelemetryService = new(telemetryServiceHttpClient)
+
+type telemetryServiceHttpClient struct {
 	delegate *gentleman.Client
 }
 
-func (client *metricsPublisherHttpClient) Publish(request *Metric) error {
-	req := client.delegate.Post().Path("/metrics-publisher/publish").JSON(request)
+func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *Telemetry) error {
+	req := client.delegate.Post().Path("/telemetry-service/publish").JSON(request)
+	req.Context.SetCancelContext(ctx)
 	_, err := req.Do()
 	return err
 }

@@ -13,9 +13,10 @@ import (
 const (
 	StateInitial             = 0
 	StateInMessageDefinition = 1
-	StateInServiceDefinition = 2
-	StateInEnumDefinition    = 3
-	StateInOption            = 4
+	StateInUnionDefinition   = 2
+	StateInServiceDefinition = 3
+	StateInEnumDefinition    = 4
+	StateInOption            = 5
 )
 
 // Lexer uses a generated DFA to scan through a utf-8 encoded input string. If
@@ -120,16 +121,12 @@ restart:
 	rule := tmFirstRule - state
 recovered:
 	switch rule {
-	case 15:
+	case 16:
 		hh := hash & 7
 		switch hh {
 		case 5:
-			if hash == 0x1b2fd && "pub" == l.source[l.tokenOffset:l.offset] {
-				rule = 17
-				break
-			}
 			if hash == 0x1b9e5 && "rpc" == l.source[l.tokenOffset:l.offset] {
-				rule = 16
+				rule = 17
 				break
 			}
 		}
@@ -157,19 +154,23 @@ recovered:
 		{
 			l.State = StateInMessageDefinition
 		}
-	case 4: // 'service': /service/
+	case 4: // 'union': /union/
+		{
+			l.State = StateInUnionDefinition
+		}
+	case 5: // 'service': /service/
 		{
 			l.State = StateInServiceDefinition
 		}
-	case 5: // 'option': /option/
+	case 6: // 'option': /option/
 		{
 			l.State = StateInOption
 		}
-	case 6: // WS: /[ \t\n\r]+/
+	case 7: // WS: /[ \t\n\r]+/
 		space = true
-	case 7: // EolComment: /\/\/[^\n]+\n/
+	case 8: // EolComment: /\/\/[^\n]+\n/
 		space = true
-	case 8: // BlockComment: /\/\*([^*]|\*+[^*\/])*\**\*\//
+	case 9: // BlockComment: /\/\*([^*]|\*+[^*\/])*\**\*\//
 		space = true
 	case 23: // '}': /\}/
 		{

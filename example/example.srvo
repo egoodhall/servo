@@ -27,7 +27,6 @@ message Metric {
   name: string;
   labels: [string:string];
   value: float64;
-  ids: [int64];
 }
 
 // The status of the message
@@ -36,7 +35,17 @@ enum MetricType {
   GAUGE;
 }
 
+message Log {
+  labels: [string:string];
+  value: string;
+}
+
 // A service to publish metrics
-service MetricsPublisher {
-  pub publish(Metric);
+service TelemetryService {
+  rpc publish(Telemetry);
+}
+
+union Telemetry {
+  log: Log;
+  metric: Metric;
 }

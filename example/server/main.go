@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/egoodhall/servo/example"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -8,7 +10,7 @@ import (
 type EchoServiceImpl struct {
 }
 
-func (svc *EchoServiceImpl) Echo(req *example.EchoRequest) (*example.EchoResponse, error) {
+func (svc *EchoServiceImpl) Echo(ctx context.Context, req *example.EchoRequest) (*example.EchoResponse, error) {
 	return &example.EchoResponse{Message: req.Message}, nil
 }
 
