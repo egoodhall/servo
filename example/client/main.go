@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/egoodhall/servo/example"
-	"gopkg.in/h2non/gentleman.v2"
 )
 
 func main() {
 	client := example.NewDelegatingEchoServiceHttpClient(
-		gentleman.New().URL("http://localhost:8080"),
+		"http://localhost:8080",
+		new(http.Client),
 	)
 
 	response, err := client.Echo(context.Background(), &example.EchoRequest{Message: "hello world!"})

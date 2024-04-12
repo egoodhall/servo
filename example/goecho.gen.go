@@ -2,93 +2,217 @@
 package example
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"github.com/labstack/echo/v4"
-	"gopkg.in/h2non/gentleman.v2"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
 )
 
-func NewEchoServiceHttpServer(service EchoService) *echo.Echo {
-	server := echo.New()
-	RegisterEchoServiceEndpoints(service, server.Group("/"))
-	return server
+func NewEchoServiceHttpServer(svc EchoService) *echo.Echo {
+	srv := echo.New()
+	RegisterEchoServiceEndpoints(svc, srv)
+	return srv
 }
 
-func RegisterEchoServiceEndpoints(service EchoService, server *echo.Group) {
-	server.POST("echo-service/echo", func(c echo.Context) error {
-		req := new(EchoRequest)
-		if err := c.Bind(req); err != nil {
-			return err
-		}
-		res, err := service.Echo(c.Request().Context(), req)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err)
-		}
-		return c.JSON(http.StatusOK, res)
-	})
+func RegisterEchoServiceEndpoints(svc EchoService, srv *echo.Echo) {
+	compat := &echoServiceHttpServer{svc}
+	srv.POST("echo-service/echo", compat.Echo)
 }
 
-func NewEchoServiceHttpClient() EchoService {
-	return NewDelegatingEchoServiceHttpClient(gentleman.New())
+type echoServiceHttpServer struct {
+	svc EchoService
 }
 
-func NewDelegatingEchoServiceHttpClient(delegate *gentleman.Client) EchoService {
-	return &echoServiceHttpClient{delegate}
+// HTTP compatibility wrapper for EchoService.echo.
+func (s *echoServiceHttpServer) Echo(c echo.Context) error {
+	req := new(EchoRequest)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+	res, err := s.svc.Echo(c.Request().Context(), req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	return c.JSON(http.StatusOK, res)
+}
+
+func NewEchoServiceHttpClient(baseUrl string) EchoService {
+	return NewDelegatingEchoServiceHttpClient(baseUrl, new(http.Client))
+}
+
+func NewDelegatingEchoServiceHttpClient(baseUrl string, delegate *http.Client) EchoService {
+	return &echoServiceHttpClient{baseUrl, delegate}
 }
 
 var _ EchoService = new(echoServiceHttpClient)
 
 type echoServiceHttpClient struct {
-	delegate *gentleman.Client
+	baseUrl  string
+	delegate *http.Client
 }
 
 func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequest) (*EchoResponse, error) {
-	req := client.delegate.Post().Path("/echo-service/echo").JSON(request)
-	req.Context.SetCancelContext(ctx)
-	res, err := req.Do()
+	u, err := url.JoinPath(client.baseUrl, "/echo-service/echo")
 	if err != nil {
 		return nil, err
 	}
+
+	body := new(bytes.Buffer)
+	if err := json.NewEncoder(body).Encode(request); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := client.delegate.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("unexpected status code" + strconv.Itoa(res.StatusCode))
+	}
+
 	response := new(EchoResponse)
-	return response, res.JSON(response)
-}
-func NewTelemetryServiceHttpServer(service TelemetryService) *echo.Echo {
-	server := echo.New()
-	RegisterTelemetryServiceEndpoints(service, server.Group("/"))
-	return server
+	return response, json.NewDecoder(res.Body).Decode(response)
 }
 
-func RegisterTelemetryServiceEndpoints(service TelemetryService, server *echo.Group) {
-	server.POST("telemetry-service/publish", func(c echo.Context) error {
-		req := new(Telemetry)
-		if err := c.Bind(req); err != nil {
-			return err
-		}
-		err := service.Publish(c.Request().Context(), req)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err)
-		}
-		return c.NoContent(http.StatusNoContent)
-	})
+func NewTestEchoServiceHttpClient(svc EchoService) EchoService {
+	return &echoServiceHttpTestClient{svc}
 }
 
-func NewTelemetryServiceHttpClient() TelemetryService {
-	return NewDelegatingTelemetryServiceHttpClient(gentleman.New())
+var _ EchoService = new(echoServiceHttpTestClient)
+
+type echoServiceHttpTestClient struct {
+	service EchoService
 }
 
-func NewDelegatingTelemetryServiceHttpClient(delegate *gentleman.Client) TelemetryService {
-	return &telemetryServiceHttpClient{delegate}
+func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRequest) (*EchoResponse, error) {
+	body := new(bytes.Buffer)
+	if err := json.NewEncoder(body).Encode(request); err != nil {
+		return nil, err
+	}
+	req := httptest.NewRequest(http.MethodPost, "/echo-service/echo", body)
+	req.Header.Set("Content-Type", "application/json")
+	res := httptest.NewRecorder()
+
+	ctx := NewEchoServiceHttpServer(client.service).NewContext(req, res)
+	if err := (&echoServiceHttpServer{client.service}).Echo(ctx); err != nil {
+		return nil, err
+	} else if res.Code != http.StatusNoContent {
+		return nil, errors.New("unexpected status code" + strconv.Itoa(res.Code))
+	}
+
+	response := new(EchoResponse)
+	return response, json.NewDecoder(res.Body).Decode(response)
+}
+
+func NewTelemetryServiceHttpServer(svc TelemetryService) *echo.Echo {
+	srv := echo.New()
+	RegisterTelemetryServiceEndpoints(svc, srv)
+	return srv
+}
+
+func RegisterTelemetryServiceEndpoints(svc TelemetryService, srv *echo.Echo) {
+	compat := &telemetryServiceHttpServer{svc}
+	srv.POST("telemetry-service/publish", compat.Publish)
+}
+
+type telemetryServiceHttpServer struct {
+	svc TelemetryService
+}
+
+// HTTP compatibility wrapper for TelemetryService.publish.
+func (s *telemetryServiceHttpServer) Publish(c echo.Context) error {
+	req := new(Telemetry)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+	err := s.svc.Publish(c.Request().Context(), req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func NewTelemetryServiceHttpClient(baseUrl string) TelemetryService {
+	return NewDelegatingTelemetryServiceHttpClient(baseUrl, new(http.Client))
+}
+
+func NewDelegatingTelemetryServiceHttpClient(baseUrl string, delegate *http.Client) TelemetryService {
+	return &telemetryServiceHttpClient{baseUrl, delegate}
 }
 
 var _ TelemetryService = new(telemetryServiceHttpClient)
 
 type telemetryServiceHttpClient struct {
-	delegate *gentleman.Client
+	baseUrl  string
+	delegate *http.Client
 }
 
 func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *Telemetry) error {
-	req := client.delegate.Post().Path("/telemetry-service/publish").JSON(request)
-	req.Context.SetCancelContext(ctx)
-	_, err := req.Do()
-	return err
+	u, err := url.JoinPath(client.baseUrl, "/telemetry-service/publish")
+	if err != nil {
+		return err
+	}
+
+	body := new(bytes.Buffer)
+	if err := json.NewEncoder(body).Encode(request); err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := client.delegate.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusNoContent {
+		return errors.New("unexpected status code" + strconv.Itoa(res.StatusCode))
+	}
+	return nil
+}
+
+func NewTestTelemetryServiceHttpClient(svc TelemetryService) TelemetryService {
+	return &telemetryServiceHttpTestClient{svc}
+}
+
+var _ TelemetryService = new(telemetryServiceHttpTestClient)
+
+type telemetryServiceHttpTestClient struct {
+	service TelemetryService
+}
+
+func (client *telemetryServiceHttpTestClient) Publish(_ context.Context, request *Telemetry) error {
+	body := new(bytes.Buffer)
+	if err := json.NewEncoder(body).Encode(request); err != nil {
+		return err
+	}
+	req := httptest.NewRequest(http.MethodPost, "/telemetry-service/publish", body)
+	req.Header.Set("Content-Type", "application/json")
+	res := httptest.NewRecorder()
+
+	ctx := NewTelemetryServiceHttpServer(client.service).NewContext(req, res)
+	if err := (&telemetryServiceHttpServer{client.service}).Publish(ctx); err != nil {
+		return err
+	} else if res.Code != http.StatusNoContent {
+		return errors.New("unexpected status code" + strconv.Itoa(res.Code))
+	}
+	return nil
 }
