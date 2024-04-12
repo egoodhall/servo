@@ -58,7 +58,8 @@ func validateTokens(filename string, tokens []token) error {
 		switch tkn.typ {
 		case parsegen.ScalarType, parsegen.ListElement,
 			parsegen.MapKeyType, parsegen.MapValueType,
-			parsegen.RpcRequest, parsegen.RpcResponse:
+			parsegen.RpcRequest, parsegen.RpcResponse,
+			parsegen.AliasType:
 
 			if _, ok := defs[tkn.value]; !ok && !ast.IsPrimitive(tkn.value) {
 				errs = append(errs, fmt.Errorf("reference to undefined type '%s' %s:%d:%d", tkn.value, filename, tkn.line, tkn.col))
@@ -76,7 +77,8 @@ func collectDefinitionTokens(tokens []token, errs []error) (defs map[string]stru
 	for _, tkn := range tokens {
 		switch tkn.typ {
 		case parsegen.EnumName, parsegen.MessageName,
-			parsegen.UnionName, parsegen.ServiceName:
+			parsegen.UnionName, parsegen.ServiceName,
+			parsegen.AliasName:
 
 			if _, ok := defs[tkn.value]; ok {
 				errs = append(errs, fmt.Errorf("multiple type definitions for name: '%s'", tkn.value))

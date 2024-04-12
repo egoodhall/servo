@@ -19,12 +19,12 @@ const (
 	UNION   // union
 	SERVICE // service
 	OPTION  // option
+	ALIAS   // alias
 	WS
 	EOLCOMMENT
 	BLOCKCOMMENT
 	ERROR
 	NAME
-	PRIMITIVE
 	MODIFIER
 	LBRACK // [
 	RBRACK // ]
@@ -33,14 +33,16 @@ const (
 	LPAREN // (
 	RPAREN // )
 	VALUE
+	MINUSGT   // ->
 	SEMICOLON // ;
-	LBRACE    // {
-	RBRACE    // }
 	ASSIGN    // =
 	STRINGLITERAL
 	BOOLLITERAL
 	INTLITERAL
 	FLOATLITERAL
+	LBRACE // {
+	RBRACE // }
+	PRIMITIVE
 
 	NumTokens
 )
@@ -53,12 +55,12 @@ var tokenStr = [...]string{
 	"union",
 	"service",
 	"option",
+	"alias",
 	"WS",
 	"EOLCOMMENT",
 	"BLOCKCOMMENT",
 	"ERROR",
 	"NAME",
-	"PRIMITIVE",
 	"MODIFIER",
 	"[",
 	"]",
@@ -67,14 +69,16 @@ var tokenStr = [...]string{
 	"(",
 	")",
 	"VALUE",
+	"->",
 	";",
-	"{",
-	"}",
 	"=",
 	"STRINGLITERAL",
 	"BOOLLITERAL",
 	"INTLITERAL",
 	"FLOATLITERAL",
+	"{",
+	"}",
+	"PRIMITIVE",
 }
 
 func (tok Type) String() string {

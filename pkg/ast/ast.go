@@ -2,11 +2,12 @@ package ast
 
 type File struct {
 	Name     string         `json:"name"`
-	Options  []*Option[any] `json:"options"`
-	Messages []*Message     `json:"messages"`
-	Unions   []*Union       `json:"unions"`
-	Enums    []*Enum        `json:"enums"`
-	Services []*Service     `json:"services"`
+	Options  []*Option[any] `json:"options,omitempty"`
+	Messages []*Message     `json:"messages,omitempty"`
+	Unions   []*Union       `json:"unions,omitempty"`
+	Enums    []*Enum        `json:"enums,omitempty"`
+	Services []*Service     `json:"services,omitempty"`
+	Aliases  []*Alias       `json:"aliases,omitempty"`
 }
 
 type Option[T any] struct {
@@ -14,9 +15,9 @@ type Option[T any] struct {
 	Value T      `json:"value"`
 }
 
-type Message struct {
-	Name   string   `json:"name"`
-	Fields []*Field `json:"fields"`
+type Alias struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 type Union struct {
@@ -27,6 +28,11 @@ type Union struct {
 type Member struct {
 	Name string     `json:"name"`
 	Type ScalarType `json:"type"`
+}
+
+type Message struct {
+	Name   string   `json:"name"`
+	Fields []*Field `json:"fields"`
 }
 
 type Field struct {

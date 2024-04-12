@@ -60,7 +60,7 @@ const (
 )
 
 func (p *Parser) Parse(lexer *Lexer) error {
-	return p.parse(0, 403, lexer)
+	return p.parse(0, 411, lexer)
 }
 
 func (p *Parser) parse(start, end int16, lexer *Lexer) error {
@@ -160,7 +160,7 @@ func (p *Parser) parse(start, end int16, lexer *Lexer) error {
 	return nil
 }
 
-const errSymbol = 10
+const errSymbol = 11
 
 // willShift checks if "symbol" is going to be shifted in the `stack+[state]` parsing stack.
 func (p *Parser) willShift(symbol int32, stack []stackEntry, state int16) bool {

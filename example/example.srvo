@@ -27,6 +27,15 @@ message Metric {
   name: string;
   labels: [string:string];
   value: float64;
+  at: timestamp;
+}
+
+alias URN -> string;
+alias Bit -> bool;
+
+message Binary {
+  location: URN;
+  bits: [Bit];
 }
 
 // The status of the message

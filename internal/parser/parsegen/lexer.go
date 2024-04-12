@@ -17,6 +17,7 @@ const (
 	StateInServiceDefinition = 3
 	StateInEnumDefinition    = 4
 	StateInOption            = 5
+	StateInAlias             = 6
 )
 
 // Lexer uses a generated DFA to scan through a utf-8 encoded input string. If
@@ -166,17 +167,21 @@ recovered:
 		{
 			l.State = StateInOption
 		}
-	case 7: // WS: /[ \t\n\r]+/
+	case 7: // 'alias': /alias/
+		{
+			l.State = StateInAlias
+		}
+	case 8: // WS: /[ \t\n\r]+/
 		space = true
-	case 8: // EolComment: /\/\/[^\n]+\n/
+	case 9: // EolComment: /\/\/[^\n]+\n/
 		space = true
-	case 9: // BlockComment: /\/\*([^*]|\*+[^*\/])*\**\*\//
+	case 10: // BlockComment: /\/\*([^*]|\*+[^*\/])*\**\*\//
 		space = true
-	case 23: // '}': /\}/
+	case 22: // ';': /;/, ';': /;/
 		{
 			l.State = StateInitial
 		}
-	case 29: // ';': /;/
+	case 30: // '}': /\}/
 		{
 			l.State = StateInitial
 		}

@@ -6,7 +6,7 @@ package = "github.com/egoodhall/servo/internal/parser/parsegen"
 
 :: lexer
 
-%x initial,inMessageDefinition,inUnionDefinition,inServiceDefinition,inEnumDefinition,inOption;
+%x initial,inMessageDefinition,inUnionDefinition,inServiceDefinition,inEnumDefinition,inOption,inAlias;
 
 ident = /[a-zA-Z_][a-zA-Z0-9_]+/
 
@@ -21,6 +21,7 @@ boolLiteral = /true|false/
   'union': /union/ { l.State = StateInUnionDefinition }
   'service': /service/ { l.State = StateInServiceDefinition }
   'option': /option/ { l.State = StateInOption }
+  'alias': /alias/ { l.State = StateInAlias }
 }
 
 <*> {
@@ -32,7 +33,6 @@ boolLiteral = /true|false/
 
 <inMessageDefinition> {
   Name: /{ident}/
-  Primitive: /string|int64|int32|float32|float64|bool/ 1
   Modifier: /[?!]/
   '[': /\[/
   ']': /\]/
@@ -55,14 +55,10 @@ boolLiteral = /true|false/
   Value: /[A-Z][A-Z0-9_]+/ 1
 }
 
-<inMessageDefinition,inUnionDefinition,inServiceDefinition> {
-  ':': /:/
-}
-
-<inMessageDefinition,inUnionDefinition,inServiceDefinition,inEnumDefinition> {
-  ';': /;/
-  '{': /\{/
-  '}': /\}/ { l.State = StateInitial }
+<inAlias> {
+  Name: /({ident}\.)?{ident}/
+  '->': /->/
+  ';': /;/ { l.State = StateInitial }
 }
 
 <inOption> {
@@ -73,6 +69,20 @@ boolLiteral = /true|false/
   IntLiteral: /{intLiteral}/
   FloatLiteral: /{floatLiteral}/
   ';': /;/ { l.State = StateInitial }
+}
+
+<inMessageDefinition,inUnionDefinition,inServiceDefinition> {
+  ':': /:/
+}
+
+<inMessageDefinition,inUnionDefinition,inServiceDefinition,inEnumDefinition> {
+  ';': /;/
+  '{': /\{/
+  '}': /\}/ { l.State = StateInitial }
+}
+
+<inAlias,inMessageDefinition> {
+  Primitive: /string|int64|int32|float32|float64|bool|timestamp/ 1
 }
 
 :: parser
@@ -105,7 +115,7 @@ FieldType: (ScalarType | MapType | ListType) FieldMod?;
 FieldDef: (FieldName WhiteSpace? ':' WhiteSpace? FieldType WhiteSpace? ';') | error  (';'|'}');
 FieldDefList: (FieldDef | FieldDef WhiteSpace);
 MessageName -> MessageName: Name;
-MessageDef: 'message' MessageName WhiteSpace? '{' WhiteSpace? FieldDefList* '}';
+Message: 'message' MessageName WhiteSpace? '{' WhiteSpace? FieldDefList* '}';
 
 # Union Definitions
 UnionMemberName -> FieldName: Name;
@@ -113,7 +123,7 @@ UnionMemberType -> ScalarType: TypeRef;
 UnionMember: (UnionMemberName WhiteSpace? ':' WhiteSpace? UnionMemberType WhiteSpace? ';') | error  (';'|'}');
 UnionMemberList: (UnionMember | UnionMember WhiteSpace);
 UnionName -> UnionName: Name;
-UnionDef: 'union' UnionName WhiteSpace? '{' WhiteSpace? UnionMemberList* '}';
+Union: 'union' UnionName WhiteSpace? '{' WhiteSpace? UnionMemberList* '}';
 
 # Service Definitions
 RpcName -> RpcName: Name;
@@ -122,17 +132,22 @@ RpcResponse -> RpcResponse: TypeRef;
 Method: 'rpc' RpcName WhiteSpace? '(' WhiteSpace? RpcRequest  WhiteSpace? ')'  (WhiteSpace? ':'  WhiteSpace? RpcResponse)? WhiteSpace? ';';
 MethodList: (Method | Method WhiteSpace);
 ServiceName -> ServiceName: Name;
-ServiceDef: 'service' ServiceName WhiteSpace? '{' WhiteSpace? MethodList+ '}';
+Service: 'service' ServiceName WhiteSpace? '{' WhiteSpace? MethodList+ '}';
 
 # Enum Definitions
 EnumName -> EnumName: Name;
 EnumValue -> EnumValue: Value;
 EnumField: EnumValue WhiteSpace? ';';
 EnumValueList: (EnumField | EnumField WhiteSpace);
-EnumDef: 'enum' EnumName WhiteSpace? '{' WhiteSpace? EnumValueList+ '}';
+Enum: 'enum' EnumName WhiteSpace? '{' WhiteSpace? EnumValueList+ '}';
+
+# Alias Definitions
+AliasName -> AliasName: Name;
+AliasType -> AliasType: Primitive;
+Alias: 'alias' AliasName '->' AliasType ';';
 
 # Elements
-Definition: MessageDef | UnionDef | ServiceDef | EnumDef | Option | error (';'|'}');
+Definition: Message | Union | Service | Enum | Option | Alias | error (';'|'}');
 DefinitionList: (Definition | Definition WhiteSpace);
 
 #File Definition

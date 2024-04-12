@@ -12,6 +12,8 @@ type Listener func(t NodeType, offset, endoffset int)
 
 const (
 	NoType NodeType = iota
+	AliasName
+	AliasType
 	EnumName
 	EnumValue
 	FieldMod
@@ -36,6 +38,8 @@ const (
 
 var nodeTypeStr = [...]string{
 	"NONE",
+	"AliasName",
+	"AliasType",
 	"EnumName",
 	"EnumValue",
 	"FieldMod",

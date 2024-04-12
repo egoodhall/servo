@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -106,20 +107,16 @@ func (tc *tokenCollector) Collect(typ parsegen.NodeType, frm, to int) {
 }
 
 func gather(tokens []token) (*ast.File, error) {
-	file := ast.File{
-		Options:  make([]*ast.Option[any], 0),
-		Enums:    make([]*ast.Enum, 0),
-		Messages: make([]*ast.Message, 0),
-		Services: make([]*ast.Service, 0),
-	}
+	file := new(ast.File)
 
-	tokenGroups := partition(tokens, func(typ parsegen.NodeType) bool {
-		return typ == parsegen.MessageName ||
-			typ == parsegen.UnionName ||
-			typ == parsegen.ServiceName ||
-			typ == parsegen.OptionName ||
-			typ == parsegen.EnumName
-	})
+	tokenGroups := partition(tokens,
+		parsegen.MessageName,
+		parsegen.UnionName,
+		parsegen.ServiceName,
+		parsegen.OptionName,
+		parsegen.EnumName,
+		parsegen.AliasName,
+	)
 
 	for _, tkns := range tokenGroups {
 		switch tkns[0].typ {
@@ -152,11 +149,16 @@ func gather(tokens []token) (*ast.File, error) {
 				Name:   tkns[0].value,
 				Values: values(tkns[1:]),
 			})
+		case parsegen.AliasName:
+			file.Aliases = append(file.Aliases, &ast.Alias{
+				Name: tkns[0].value,
+				Type: tkns[1].value,
+			})
 		default:
 			return nil, fmt.Errorf("unexpected %s token: '%s'", tkns[0].typ, tkns[0].value)
 		}
 	}
-	return &file, nil
+	return file, nil
 }
 
 func gatherOption(name token, tokens []token) (*ast.Option[any], error) {
@@ -204,9 +206,7 @@ func gatherService(name token, tokens []token) (*ast.Service, error) {
 		Name: name.value,
 	}
 
-	for _, method := range partition(tokens, func(typ parsegen.NodeType) bool {
-		return typ == parsegen.RpcName
-	}) {
+	for _, method := range partition(tokens, parsegen.RpcName) {
 		name := method[0]
 		switch name.typ {
 		case parsegen.RpcName:
@@ -263,9 +263,7 @@ func gatherMessage(name token, tokens []token) (*ast.Message, error) {
 		Fields: make([]*ast.Field, 0),
 	}
 
-	for _, field := range partition(tokens, func(typ parsegen.NodeType) bool {
-		return typ == parsegen.FieldName
-	}) {
+	for _, field := range partition(tokens, parsegen.FieldName) {
 		switch field[0].typ {
 		case parsegen.FieldName:
 			fld, err := gatherField(field[0], field[1:])
@@ -287,9 +285,7 @@ func gatherUnion(name token, tokens []token) (*ast.Union, error) {
 		Members: make([]*ast.Member, 0),
 	}
 
-	for _, field := range partition(tokens, func(typ parsegen.NodeType) bool {
-		return typ == parsegen.FieldName
-	}) {
+	for _, field := range partition(tokens, parsegen.FieldName) {
 		switch field[0].typ {
 		case parsegen.FieldName:
 			mem, err := gatherMember(field[0], field[1:])
@@ -365,11 +361,11 @@ func values(in []token) []string {
 	return vals
 }
 
-func partition(in []token, test func(parsegen.NodeType) bool) [][]token {
+func partition(in []token, delimeter parsegen.NodeType, delimeters ...parsegen.NodeType) [][]token {
 	partitions := make([][]token, 0)
 	start := 0
 	for i, t := range in {
-		if test(t.typ) && i != start {
+		if i != start && (delimeter == t.typ || slices.Contains(delimeters, t.typ)) {
 			partitions = append(partitions, in[start:i])
 			start = i
 		}
