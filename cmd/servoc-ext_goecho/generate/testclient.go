@@ -73,7 +73,7 @@ func generateTestClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.S
 				jen.Err().Op("!=").Nil(),
 			).Block(
 				jen.Return(jen.Nil(), jen.Err()),
-			).Else().If(jen.Id("res").Dot("Code").Op("!=").Qual(pkgHttp, "StatusOk")).Block(
+			).Else().If(jen.Id("res").Dot("Code").Op("!=").Qual(pkgHttp, "StatusOK")).Block(
 				jen.Return(jen.Nil(), jen.Qual(pkgErrors, "New").Call(
 					jen.Lit("unexpected status code ").Op("+").Qual(pkgStrconv, "Itoa").Call(jen.Id("res").Dot("Code")),
 				)),

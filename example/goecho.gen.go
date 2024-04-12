@@ -113,7 +113,7 @@ func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRe
 	ctx := NewEchoServiceHttpServer(client.service).NewContext(req, res)
 	if err := (&echoServiceHttpServer{client.service}).Echo(ctx); err != nil {
 		return nil, err
-	} else if res.Code != http.StatusOk {
+	} else if res.Code != http.StatusOK {
 		return nil, errors.New("unexpected status code " + strconv.Itoa(res.Code))
 	}
 
