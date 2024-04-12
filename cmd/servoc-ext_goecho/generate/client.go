@@ -101,7 +101,7 @@ func generateClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.State
 			jen.Line(),
 			jen.If(jen.Id("res").Dot("StatusCode").Op("!=").Qual(pkgHttp, "StatusOK")).Block(
 				jen.Return(jen.Nil(), jen.Qual(pkgErrors, "New").Call(
-					jen.Lit("unexpected status code").Op("+").Qual(pkgStrconv, "Itoa").Call(jen.Id("res").Dot("StatusCode")),
+					jen.Lit("unexpected status code ").Op("+").Qual(pkgStrconv, "Itoa").Call(jen.Id("res").Dot("StatusCode")),
 				)),
 			),
 			jen.Line(),
@@ -156,7 +156,7 @@ func generateClientMethodWithoutResponse(svc *ast.Service, rpc *ast.Rpc) *jen.St
 			jen.Line(),
 			jen.If(jen.Id("res").Dot("StatusCode").Op("!=").Qual(pkgHttp, "StatusNoContent")).Block(
 				jen.Return(jen.Qual(pkgErrors, "New").Call(
-					jen.Lit("unexpected status code").Op("+").Qual(pkgStrconv, "Itoa").Call(jen.Id("res").Dot("StatusCode")),
+					jen.Lit("unexpected status code ").Op("+").Qual(pkgStrconv, "Itoa").Call(jen.Id("res").Dot("StatusCode")),
 				)),
 			),
 			jen.Return(jen.Nil()),

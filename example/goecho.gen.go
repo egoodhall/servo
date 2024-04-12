@@ -84,7 +84,7 @@ func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequ
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New("unexpected status code" + strconv.Itoa(res.StatusCode))
+		return nil, errors.New("unexpected status code " + strconv.Itoa(res.StatusCode))
 	}
 
 	response := new(EchoResponse)
@@ -113,8 +113,8 @@ func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRe
 	ctx := NewEchoServiceHttpServer(client.service).NewContext(req, res)
 	if err := (&echoServiceHttpServer{client.service}).Echo(ctx); err != nil {
 		return nil, err
-	} else if res.Code != http.StatusNoContent {
-		return nil, errors.New("unexpected status code" + strconv.Itoa(res.Code))
+	} else if res.Code != http.StatusOk {
+		return nil, errors.New("unexpected status code " + strconv.Itoa(res.Code))
 	}
 
 	response := new(EchoResponse)
@@ -192,7 +192,7 @@ func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusNoContent {
-		return errors.New("unexpected status code" + strconv.Itoa(res.StatusCode))
+		return errors.New("unexpected status code " + strconv.Itoa(res.StatusCode))
 	}
 	return nil
 }
@@ -220,7 +220,7 @@ func (client *telemetryServiceHttpTestClient) Publish(_ context.Context, request
 	if err := (&telemetryServiceHttpServer{client.service}).Publish(ctx); err != nil {
 		return err
 	} else if res.Code != http.StatusNoContent {
-		return errors.New("unexpected status code" + strconv.Itoa(res.Code))
+		return errors.New("unexpected status code " + strconv.Itoa(res.Code))
 	}
 	return nil
 }
