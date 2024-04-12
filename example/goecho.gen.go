@@ -15,11 +15,15 @@ import (
 
 func NewEchoServiceHttpServer(svc EchoService) *echo.Echo {
 	srv := echo.New()
-	RegisterEchoServiceEndpoints(svc, srv)
+	RegisterEchoServiceRPCs(svc, srv)
 	return srv
 }
 
-func RegisterEchoServiceEndpoints(svc EchoService, srv *echo.Echo) {
+func RegisterEchoServiceRPCs(svc EchoService, srv *echo.Echo) {
+	RegisterEchoServiceRPCsGroup(svc, srv.Group("/"))
+}
+
+func RegisterEchoServiceRPCsGroup(svc EchoService, srv *echo.Group) {
 	compat := &echoServiceHttpServer{svc}
 	srv.POST("echo-service/echo", compat.Echo)
 }
@@ -119,11 +123,15 @@ func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRe
 
 func NewTelemetryServiceHttpServer(svc TelemetryService) *echo.Echo {
 	srv := echo.New()
-	RegisterTelemetryServiceEndpoints(svc, srv)
+	RegisterTelemetryServiceRPCs(svc, srv)
 	return srv
 }
 
-func RegisterTelemetryServiceEndpoints(svc TelemetryService, srv *echo.Echo) {
+func RegisterTelemetryServiceRPCs(svc TelemetryService, srv *echo.Echo) {
+	RegisterTelemetryServiceRPCsGroup(svc, srv.Group("/"))
+}
+
+func RegisterTelemetryServiceRPCsGroup(svc TelemetryService, srv *echo.Group) {
 	compat := &telemetryServiceHttpServer{svc}
 	srv.POST("telemetry-service/publish", compat.Publish)
 }
