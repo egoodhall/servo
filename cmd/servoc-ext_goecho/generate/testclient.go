@@ -9,6 +9,7 @@ import (
 )
 
 func TestClient(gofile *jen.File, svc *ast.Service) {
+	gofile.Add(newHeaderComment("%s test HTTP client", svc.Name))
 	gofile.Add(generateTestClientConstructor(svc)).Line()
 	gofile.Add(generateTestClientType(svc)).Line()
 

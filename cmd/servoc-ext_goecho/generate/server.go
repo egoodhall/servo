@@ -7,6 +7,7 @@ import (
 )
 
 func Server(gofile *jen.File, svc *ast.Service) {
+	gofile.Add(newHeaderComment("%s HTTP server", svc.Name))
 	gofile.Add(generateServerConstructor(svc)).Line()
 	gofile.Add(generateServerRegisterFunc(svc)).Line()
 	gofile.Add(generateServerRegisterGroupFunc(svc)).Line()

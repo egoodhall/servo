@@ -13,6 +13,10 @@ import (
 	"strconv"
 )
 
+/////////////////////////////
+// EchoService HTTP server //
+/////////////////////////////
+
 func NewEchoServiceHttpServer(svc EchoService) *echo.Echo {
 	srv := echo.New()
 	RegisterEchoServiceRPCs(svc, srv)
@@ -44,6 +48,10 @@ func (s *echoServiceHttpServer) Echo(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, res)
 }
+
+/////////////////////////////
+// EchoService HTTP client //
+/////////////////////////////
 
 func NewEchoServiceHttpClient(baseUrl string) EchoService {
 	return NewDelegatingEchoServiceHttpClient(baseUrl, new(http.Client))
@@ -91,6 +99,10 @@ func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequ
 	return response, json.NewDecoder(res.Body).Decode(response)
 }
 
+//////////////////////////////////
+// EchoService test HTTP client //
+//////////////////////////////////
+
 func NewTestEchoServiceHttpClient(svc EchoService) EchoService {
 	return &echoServiceHttpTestClient{svc}
 }
@@ -120,6 +132,10 @@ func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRe
 	response := new(EchoResponse)
 	return response, json.NewDecoder(res.Body).Decode(response)
 }
+
+//////////////////////////////////
+// TelemetryService HTTP server //
+//////////////////////////////////
 
 func NewTelemetryServiceHttpServer(svc TelemetryService) *echo.Echo {
 	srv := echo.New()
@@ -152,6 +168,10 @@ func (s *telemetryServiceHttpServer) Publish(c echo.Context) error {
 	}
 	return c.NoContent(http.StatusNoContent)
 }
+
+//////////////////////////////////
+// TelemetryService HTTP client //
+//////////////////////////////////
 
 func NewTelemetryServiceHttpClient(baseUrl string) TelemetryService {
 	return NewDelegatingTelemetryServiceHttpClient(baseUrl, new(http.Client))
@@ -196,6 +216,10 @@ func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *
 	}
 	return nil
 }
+
+///////////////////////////////////////
+// TelemetryService test HTTP client //
+///////////////////////////////////////
 
 func NewTestTelemetryServiceHttpClient(svc TelemetryService) TelemetryService {
 	return &telemetryServiceHttpTestClient{svc}

@@ -2,7 +2,9 @@ package generate
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/dave/jennifer/jen"
 	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/iancoleman/strcase"
 )
@@ -59,4 +61,13 @@ func newRpcNames(svc *ast.Service, rpc *ast.Rpc) rpcNames {
 		MethodName: strcase.ToCamel(rpc.Name),
 		HttpPath:   fmt.Sprintf("%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name)),
 	}
+}
+
+func newHeaderComment(message string, args ...any) *jen.Statement {
+	comment := fmt.Sprintf("// %s //", fmt.Sprintf(message, args...))
+	aboveAndBelow := strings.Repeat("/", len(comment))
+
+	return jen.Comment(aboveAndBelow).Line().
+		Comment(comment).Line().
+		Comment(aboveAndBelow).Line()
 }

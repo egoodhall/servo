@@ -9,6 +9,7 @@ import (
 )
 
 func Client(gofile *jen.File, svc *ast.Service) {
+	gofile.Add(newHeaderComment("%s HTTP client", svc.Name))
 	gofile.Add(generateClientConstructor(svc)).Line()
 	gofile.Add(generateDelegatingClientConstructor(svc)).Line()
 	gofile.Add(generateClientType(svc)).Line()
