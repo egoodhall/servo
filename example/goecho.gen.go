@@ -103,7 +103,7 @@ func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequ
 // EchoService test HTTP client //
 //////////////////////////////////
 
-func NewTestEchoServiceHttpClient(svc EchoService) EchoService {
+func NewEchoServiceTestHttpClient(svc EchoService) EchoService {
 	return &echoServiceHttpTestClient{svc}
 }
 
@@ -221,7 +221,7 @@ func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *
 // TelemetryService test HTTP client //
 ///////////////////////////////////////
 
-func NewTestTelemetryServiceHttpClient(svc TelemetryService) TelemetryService {
+func NewTelemetryServiceTestHttpClient(svc TelemetryService) TelemetryService {
 	return &telemetryServiceHttpTestClient{svc}
 }
 

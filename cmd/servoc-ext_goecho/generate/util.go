@@ -46,7 +46,7 @@ type testClientNames struct {
 
 func newTestClientNames(svc *ast.Service) testClientNames {
 	return testClientNames{
-		Constructor:    "NewTest" + strcase.ToCamel(svc.Name) + "HttpClient",
+		Constructor:    "New" + strcase.ToCamel(svc.Name) + "TestHttpClient",
 		Implementation: strcase.ToLowerCamel(svc.Name) + "HttpTestClient",
 	}
 }
