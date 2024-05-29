@@ -14,6 +14,7 @@ message EchoRequest {
 // A response with an echoed message
 message EchoResponse {
   message: string;
+  id: uuid;
   signature: [byte];
 }
 

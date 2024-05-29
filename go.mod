@@ -9,10 +9,10 @@ require (
 
 require (
 	github.com/dave/jennifer v1.7.0
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/iancoleman/strcase v0.3.0
 	github.com/labstack/echo/v4 v4.11.4
-	gopkg.in/h2non/gentleman.v2 v2.0.5
 )
 
 require (
@@ -21,7 +21,6 @@ require (
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	golang.org/x/crypto v0.18.0 // indirect

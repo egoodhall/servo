@@ -3,6 +3,7 @@ package example
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -17,8 +18,9 @@ type (
 	}
 
 	EchoResponse struct {
-		Message   string `json:"message"`
-		Signature []byte `json:"signature"`
+		Message   string    `json:"message"`
+		Id        uuid.UUID `json:"id"`
+		Signature []byte    `json:"signature"`
 	}
 
 	Metric struct {

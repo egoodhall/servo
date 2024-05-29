@@ -82,7 +82,7 @@ boolLiteral = /true|false/
 }
 
 <inAlias,inMessageDefinition> {
-  Primitive: /string|int64|int32|float32|float64|bool|byte|timestamp/ 1
+  Primitive: /string|int64|int32|float32|float64|bool|byte|uuid|timestamp/ 1
 }
 
 :: parser
