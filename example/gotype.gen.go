@@ -4,6 +4,7 @@ package example
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 	"time"
 )
 
@@ -12,35 +13,33 @@ type (
 	Bit bool
 )
 
-type (
-	EchoRequest struct {
-		Message string `json:"message"`
-	}
+type EchoRequest struct {
+	Message string `json:"message"`
+}
 
-	EchoResponse struct {
-		Message   string    `json:"message"`
-		Id        uuid.UUID `json:"id"`
-		Signature []byte    `json:"signature"`
-	}
+type EchoResponse struct {
+	Message   string    `json:"message"`
+	Id        uuid.UUID `json:"id"`
+	Signature []byte    `json:"signature"`
+}
 
-	Metric struct {
-		Type   MetricType        `json:"type"`
-		Name   string            `json:"name"`
-		Labels map[string]string `json:"labels"`
-		Value  float64           `json:"value"`
-		At     time.Time         `json:"at"`
-	}
+type Metric struct {
+	Type   MetricType        `json:"type"`
+	Name   string            `json:"name"`
+	Labels map[string]string `json:"labels"`
+	Value  float64           `json:"value"`
+	At     time.Time         `json:"at"`
+}
 
-	Binary struct {
-		Location URN   `json:"location"`
-		Bits     []Bit `json:"bits"`
-	}
+type Binary struct {
+	Location URN   `json:"location"`
+	Bits     []Bit `json:"bits"`
+}
 
-	Log struct {
-		Labels map[string]string `json:"labels"`
-		Value  string            `json:"value"`
-	}
-)
+type Log struct {
+	Labels map[string]string `json:"labels"`
+	Value  string            `json:"value"`
+}
 
 type MetricType string
 
@@ -55,12 +54,18 @@ type Telemetry struct {
 	Metric        *Metric `json:"metric,omitempty"`
 }
 
-type (
-	EchoService interface {
-		Echo(context.Context, *EchoRequest) (*EchoResponse, error)
-	}
+type EchoServiceHttpClient interface {
+	Echo(context.Context, *EchoRequest) (*EchoResponse, error)
+}
 
-	TelemetryService interface {
-		Publish(context.Context, *Telemetry) error
-	}
-)
+type EchoService interface {
+	Echo(echo.Context, *EchoRequest) (*EchoResponse, error)
+}
+
+type TelemetryServiceHttpClient interface {
+	Publish(context.Context, *Telemetry) error
+}
+
+type TelemetryService interface {
+	Publish(echo.Context, *Telemetry) error
+}

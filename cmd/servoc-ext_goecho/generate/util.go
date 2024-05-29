@@ -26,6 +26,7 @@ func newServerNames(svc *ast.Service) serverNames {
 }
 
 type clientNames struct {
+	Interface             string
 	DelegatingConstructor string
 	Constructor           string
 	Implementation        string
@@ -33,6 +34,7 @@ type clientNames struct {
 
 func newClientNames(svc *ast.Service) clientNames {
 	return clientNames{
+		Interface:             strcase.ToCamel(svc.Name) + "HttpClient",
 		DelegatingConstructor: "NewDelegating" + strcase.ToCamel(svc.Name) + "HttpClient",
 		Constructor:           "New" + strcase.ToCamel(svc.Name) + "HttpClient",
 		Implementation:        strcase.ToLowerCamel(svc.Name) + "HttpClient",
@@ -40,12 +42,14 @@ func newClientNames(svc *ast.Service) clientNames {
 }
 
 type testClientNames struct {
+	Interface      string
 	Constructor    string
 	Implementation string
 }
 
 func newTestClientNames(svc *ast.Service) testClientNames {
 	return testClientNames{
+		Interface:      strcase.ToCamel(svc.Name) + "HttpClient",
 		Constructor:    "New" + strcase.ToCamel(svc.Name) + "TestHttpClient",
 		Implementation: strcase.ToLowerCamel(svc.Name) + "HttpTestClient",
 	}

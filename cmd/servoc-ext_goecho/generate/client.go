@@ -28,7 +28,7 @@ func generateClientConstructor(svc *ast.Service) *jen.Statement {
 
 	return jen.Func().Id(names.Constructor).
 		Params(jen.Id("baseUrl").String()).
-		List(jen.Id(svc.Name)).
+		List(jen.Id(names.Interface)).
 		Block(
 			jen.Return(jen.Id(names.DelegatingConstructor).Params(
 				jen.Id("baseUrl"),
@@ -42,7 +42,7 @@ func generateDelegatingClientConstructor(svc *ast.Service) *jen.Statement {
 
 	return jen.Func().Id(names.DelegatingConstructor).
 		Params(jen.Id("baseUrl").String(), jen.Id("delegate").Op("*").Qual(pkgHttp, "Client")).
-		List(jen.Id(svc.Name)).
+		List(jen.Id(names.Interface)).
 		Block(
 			jen.Return(jen.Op("&").Id(names.Implementation).Values(jen.Id("baseUrl"), jen.Id("delegate"))),
 		)
@@ -51,7 +51,7 @@ func generateDelegatingClientConstructor(svc *ast.Service) *jen.Statement {
 func generateClientType(svc *ast.Service) *jen.Statement {
 	names := newClientNames(svc)
 
-	return jen.Var().Id("_").Id(svc.Name).Op("=").New(jen.Id(names.Implementation)).
+	return jen.Var().Id("_").Id(names.Interface).Op("=").New(jen.Id(names.Implementation)).
 		Line().
 		Type().Id(names.Implementation).Struct(
 		jen.Id("baseUrl").String(),

@@ -83,7 +83,7 @@ func generateServerRpcHandler(svc *ast.Service, rpc *ast.Rpc) *jen.Statement {
 			jen.Return(jen.Err()),
 		),
 		jen.List(jen.Id("res"), jen.Err()).Op(":=").Id("s").Dot("svc").Dot(strcase.ToCamel(rpc.Name)).Params(
-			jen.Id("c").Dot("Request").Params().Dot("Context").Params(),
+			jen.Id("c"),
 			jen.Id("req"),
 		),
 		jen.If(jen.Err().Op("!=").Nil()).Block(
@@ -114,7 +114,7 @@ func generateServerPubHandler(svc *ast.Service, rpc *ast.Rpc) *jen.Statement {
 				jen.Return(jen.Err()),
 			),
 			jen.Err().Op(":=").Id("s").Dot("svc").Dot(strcase.ToCamel(rpc.Name)).Params(
-				jen.Id("c").Dot("Request").Params().Dot("Context").Params(),
+				jen.Id("c"),
 				jen.Id("req"),
 			),
 			jen.If(jen.Err().Op("!=").Nil()).Block(

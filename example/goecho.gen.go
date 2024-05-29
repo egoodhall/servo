@@ -42,7 +42,7 @@ func (s *echoServiceHttpServer) Echo(c echo.Context) error {
 	if err := c.Bind(req); err != nil {
 		return err
 	}
-	res, err := s.svc.Echo(c.Request().Context(), req)
+	res, err := s.svc.Echo(c, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
@@ -53,15 +53,15 @@ func (s *echoServiceHttpServer) Echo(c echo.Context) error {
 // EchoService HTTP client //
 /////////////////////////////
 
-func NewEchoServiceHttpClient(baseUrl string) EchoService {
+func NewEchoServiceHttpClient(baseUrl string) EchoServiceHttpClient {
 	return NewDelegatingEchoServiceHttpClient(baseUrl, new(http.Client))
 }
 
-func NewDelegatingEchoServiceHttpClient(baseUrl string, delegate *http.Client) EchoService {
+func NewDelegatingEchoServiceHttpClient(baseUrl string, delegate *http.Client) EchoServiceHttpClient {
 	return &echoServiceHttpClient{baseUrl, delegate}
 }
 
-var _ EchoService = new(echoServiceHttpClient)
+var _ EchoServiceHttpClient = new(echoServiceHttpClient)
 
 type echoServiceHttpClient struct {
 	baseUrl  string
@@ -103,11 +103,11 @@ func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequ
 // EchoService test HTTP client //
 //////////////////////////////////
 
-func NewEchoServiceTestHttpClient(svc EchoService) EchoService {
+func NewEchoServiceTestHttpClient(svc EchoService) EchoServiceHttpClient {
 	return &echoServiceHttpTestClient{svc}
 }
 
-var _ EchoService = new(echoServiceHttpTestClient)
+var _ EchoServiceHttpClient = new(echoServiceHttpTestClient)
 
 type echoServiceHttpTestClient struct {
 	service EchoService
@@ -162,7 +162,7 @@ func (s *telemetryServiceHttpServer) Publish(c echo.Context) error {
 	if err := c.Bind(req); err != nil {
 		return err
 	}
-	err := s.svc.Publish(c.Request().Context(), req)
+	err := s.svc.Publish(c, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
@@ -173,15 +173,15 @@ func (s *telemetryServiceHttpServer) Publish(c echo.Context) error {
 // TelemetryService HTTP client //
 //////////////////////////////////
 
-func NewTelemetryServiceHttpClient(baseUrl string) TelemetryService {
+func NewTelemetryServiceHttpClient(baseUrl string) TelemetryServiceHttpClient {
 	return NewDelegatingTelemetryServiceHttpClient(baseUrl, new(http.Client))
 }
 
-func NewDelegatingTelemetryServiceHttpClient(baseUrl string, delegate *http.Client) TelemetryService {
+func NewDelegatingTelemetryServiceHttpClient(baseUrl string, delegate *http.Client) TelemetryServiceHttpClient {
 	return &telemetryServiceHttpClient{baseUrl, delegate}
 }
 
-var _ TelemetryService = new(telemetryServiceHttpClient)
+var _ TelemetryServiceHttpClient = new(telemetryServiceHttpClient)
 
 type telemetryServiceHttpClient struct {
 	baseUrl  string
@@ -221,11 +221,11 @@ func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *
 // TelemetryService test HTTP client //
 ///////////////////////////////////////
 
-func NewTelemetryServiceTestHttpClient(svc TelemetryService) TelemetryService {
+func NewTelemetryServiceTestHttpClient(svc TelemetryService) TelemetryServiceHttpClient {
 	return &telemetryServiceHttpTestClient{svc}
 }
 
-var _ TelemetryService = new(telemetryServiceHttpTestClient)
+var _ TelemetryServiceHttpClient = new(telemetryServiceHttpTestClient)
 
 type telemetryServiceHttpTestClient struct {
 	service TelemetryService
