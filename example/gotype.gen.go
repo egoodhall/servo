@@ -17,7 +17,8 @@ type (
 	}
 
 	EchoResponse struct {
-		Message string `json:"message"`
+		Message   string `json:"message"`
+		Signature []byte `json:"signature"`
 	}
 
 	Metric struct {
