@@ -4,8 +4,7 @@
 
 // Options can be specified
 option gotype.package = "example";
-option goecho.package = "example";
-option gonats.package = "example";
+option gohttp.package = "example";
 
 // A request to echo a message
 message EchoRequest {
