@@ -3,13 +3,13 @@ package main
 import (
 	"os"
 
-	"github.com/egoodhall/servo/cmd/servoc-ext_goecho/generate"
-	"github.com/egoodhall/servo/cmd/servoc-ext_goecho/options"
+	"github.com/egoodhall/servo/cmd/servoc-ext_gohttp/generate"
+	"github.com/egoodhall/servo/cmd/servoc-ext_gohttp/options"
 	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-func (x *GoNrpcPlugin) Generate(file *ast.File, options options.Options) error {
+func (x *GoHttpPlugin) Generate(file *ast.File, options options.Options) error {
 	retryablehttp.NewClient()
 	if !options.Enabled {
 		return nil

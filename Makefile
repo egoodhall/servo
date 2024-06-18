@@ -11,5 +11,5 @@ servoc:
 	go install ./cmd/servoc
 
 plugins:
-	go install ./cmd/servoc-ext_goecho
 	go install ./cmd/servoc-ext_gotype
+	go install ./cmd/servoc-ext_gohttp

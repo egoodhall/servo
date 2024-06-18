@@ -17,27 +17,31 @@ import (
 // EchoService HTTP server //
 /////////////////////////////
 
-func NewEchoServiceHttpServer(svc EchoService) *echo.Echo {
+type EchoServiceHttpEndpoints interface {
+	Echo(echo.Context, *EchoRequest) (*EchoResponse, error)
+}
+
+func NewEchoServiceHttpServer(svc EchoServiceHttpEndpoints) *echo.Echo {
 	srv := echo.New()
 	RegisterEchoServiceRPCs(svc, srv)
 	return srv
 }
 
-func RegisterEchoServiceRPCs(svc EchoService, srv *echo.Echo) {
+func RegisterEchoServiceRPCs(svc EchoServiceHttpEndpoints, srv *echo.Echo) {
 	RegisterEchoServiceRPCsGroup(svc, srv.Group("/"))
 }
 
-func RegisterEchoServiceRPCsGroup(svc EchoService, srv *echo.Group) {
-	compat := &echoServiceHttpServer{svc}
+func RegisterEchoServiceRPCsGroup(svc EchoServiceHttpEndpoints, srv *echo.Group) {
+	compat := &echoServiceHttpAdapter{svc}
 	srv.POST("echo-service/echo", compat.Echo)
 }
 
-type echoServiceHttpServer struct {
-	svc EchoService
+type echoServiceHttpAdapter struct {
+	svc EchoServiceHttpEndpoints
 }
 
 // HTTP compatibility wrapper for EchoService.echo.
-func (s *echoServiceHttpServer) Echo(c echo.Context) error {
+func (s *echoServiceHttpAdapter) Echo(c echo.Context) error {
 	req := new(EchoRequest)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -52,6 +56,10 @@ func (s *echoServiceHttpServer) Echo(c echo.Context) error {
 /////////////////////////////
 // EchoService HTTP client //
 /////////////////////////////
+
+type EchoServiceHttpClient interface {
+	Echo(context.Context, *EchoRequest) (*EchoResponse, error)
+}
 
 func NewEchoServiceHttpClient(baseUrl string) EchoServiceHttpClient {
 	return NewDelegatingEchoServiceHttpClient(baseUrl, new(http.Client))
@@ -103,14 +111,14 @@ func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequ
 // EchoService test HTTP client //
 //////////////////////////////////
 
-func NewEchoServiceTestHttpClient(svc EchoService) EchoServiceHttpClient {
+func NewEchoServiceTestHttpClient(svc EchoServiceHttpEndpoints) EchoServiceHttpClient {
 	return &echoServiceHttpTestClient{svc}
 }
 
 var _ EchoServiceHttpClient = new(echoServiceHttpTestClient)
 
 type echoServiceHttpTestClient struct {
-	service EchoService
+	service EchoServiceHttpEndpoints
 }
 
 func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRequest) (*EchoResponse, error) {
@@ -123,7 +131,7 @@ func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRe
 	res := httptest.NewRecorder()
 
 	ctx := NewEchoServiceHttpServer(client.service).NewContext(req, res)
-	if err := (&echoServiceHttpServer{client.service}).Echo(ctx); err != nil {
+	if err := (&echoServiceHttpAdapter{client.service}).Echo(ctx); err != nil {
 		return nil, err
 	} else if res.Code != http.StatusOK {
 		return nil, errors.New("unexpected status code " + strconv.Itoa(res.Code))
@@ -137,27 +145,31 @@ func (client *echoServiceHttpTestClient) Echo(_ context.Context, request *EchoRe
 // TelemetryService HTTP server //
 //////////////////////////////////
 
-func NewTelemetryServiceHttpServer(svc TelemetryService) *echo.Echo {
+type TelemetryServiceHttpEndpoints interface {
+	Publish(echo.Context, *Telemetry) error
+}
+
+func NewTelemetryServiceHttpServer(svc TelemetryServiceHttpEndpoints) *echo.Echo {
 	srv := echo.New()
 	RegisterTelemetryServiceRPCs(svc, srv)
 	return srv
 }
 
-func RegisterTelemetryServiceRPCs(svc TelemetryService, srv *echo.Echo) {
+func RegisterTelemetryServiceRPCs(svc TelemetryServiceHttpEndpoints, srv *echo.Echo) {
 	RegisterTelemetryServiceRPCsGroup(svc, srv.Group("/"))
 }
 
-func RegisterTelemetryServiceRPCsGroup(svc TelemetryService, srv *echo.Group) {
-	compat := &telemetryServiceHttpServer{svc}
+func RegisterTelemetryServiceRPCsGroup(svc TelemetryServiceHttpEndpoints, srv *echo.Group) {
+	compat := &telemetryServiceHttpAdapter{svc}
 	srv.POST("telemetry-service/publish", compat.Publish)
 }
 
-type telemetryServiceHttpServer struct {
-	svc TelemetryService
+type telemetryServiceHttpAdapter struct {
+	svc TelemetryServiceHttpEndpoints
 }
 
 // HTTP compatibility wrapper for TelemetryService.publish.
-func (s *telemetryServiceHttpServer) Publish(c echo.Context) error {
+func (s *telemetryServiceHttpAdapter) Publish(c echo.Context) error {
 	req := new(Telemetry)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -172,6 +184,10 @@ func (s *telemetryServiceHttpServer) Publish(c echo.Context) error {
 //////////////////////////////////
 // TelemetryService HTTP client //
 //////////////////////////////////
+
+type TelemetryServiceHttpClient interface {
+	Publish(context.Context, *Telemetry) error
+}
 
 func NewTelemetryServiceHttpClient(baseUrl string) TelemetryServiceHttpClient {
 	return NewDelegatingTelemetryServiceHttpClient(baseUrl, new(http.Client))
@@ -221,14 +237,14 @@ func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *
 // TelemetryService test HTTP client //
 ///////////////////////////////////////
 
-func NewTelemetryServiceTestHttpClient(svc TelemetryService) TelemetryServiceHttpClient {
+func NewTelemetryServiceTestHttpClient(svc TelemetryServiceHttpEndpoints) TelemetryServiceHttpClient {
 	return &telemetryServiceHttpTestClient{svc}
 }
 
 var _ TelemetryServiceHttpClient = new(telemetryServiceHttpTestClient)
 
 type telemetryServiceHttpTestClient struct {
-	service TelemetryService
+	service TelemetryServiceHttpEndpoints
 }
 
 func (client *telemetryServiceHttpTestClient) Publish(_ context.Context, request *Telemetry) error {
@@ -241,7 +257,7 @@ func (client *telemetryServiceHttpTestClient) Publish(_ context.Context, request
 	res := httptest.NewRecorder()
 
 	ctx := NewTelemetryServiceHttpServer(client.service).NewContext(req, res)
-	if err := (&telemetryServiceHttpServer{client.service}).Publish(ctx); err != nil {
+	if err := (&telemetryServiceHttpAdapter{client.service}).Publish(ctx); err != nil {
 		return err
 	} else if res.Code != http.StatusNoContent {
 		return errors.New("unexpected status code " + strconv.Itoa(res.Code))

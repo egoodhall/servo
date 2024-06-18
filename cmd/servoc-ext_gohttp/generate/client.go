@@ -10,6 +10,7 @@ import (
 
 func Client(gofile *jen.File, svc *ast.Service) {
 	gofile.Add(newHeaderComment("%s HTTP client", svc.Name))
+	gofile.Add(generateClientInterface(svc)).Line()
 	gofile.Add(generateClientConstructor(svc)).Line()
 	gofile.Add(generateDelegatingClientConstructor(svc)).Line()
 	gofile.Add(generateClientType(svc)).Line()
@@ -21,6 +22,25 @@ func Client(gofile *jen.File, svc *ast.Service) {
 			gofile.Add(generateClientMethodWithoutResponse(svc, rpc)).Line()
 		}
 	}
+}
+
+func generateClientInterface(svc *ast.Service) *jen.Statement {
+	names := newClientNames(svc)
+	return jen.Type().Id(names.Interface).InterfaceFunc(func(g *jen.Group) {
+		for _, rpc := range svc.Rpcs {
+			rpcNames := newRpcNames(svc, rpc)
+			method := jen.Id(rpcNames.MethodName).Params(
+				jen.Qual(pkgContext, "Context"),
+				jen.Op("*").Id(rpc.Request),
+			)
+			if rpc.Response == "" {
+				method.Error()
+			} else {
+				method.Params(jen.Op("*").Id(rpc.Response), jen.Error())
+			}
+			g.Add(method)
+		}
+	})
 }
 
 func generateClientConstructor(svc *ast.Service) *jen.Statement {

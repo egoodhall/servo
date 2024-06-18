@@ -11,7 +11,8 @@ import (
 
 type serverNames struct {
 	Constructor       string
-	HttpCompat        string
+	HttpEndpoints     string
+	HttpAdapter       string
 	RegisterFunc      string
 	RegisterGroupFunc string
 }
@@ -19,7 +20,8 @@ type serverNames struct {
 func newServerNames(svc *ast.Service) serverNames {
 	return serverNames{
 		Constructor:       "New" + strcase.ToCamel(svc.Name) + "HttpServer",
-		HttpCompat:        strcase.ToLowerCamel(svc.Name) + "HttpServer",
+		HttpEndpoints:     strcase.ToCamel(svc.Name) + "HttpEndpoints",
+		HttpAdapter:       strcase.ToLowerCamel(svc.Name) + "HttpAdapter",
 		RegisterFunc:      "Register" + strcase.ToCamel(svc.Name) + "RPCs",
 		RegisterGroupFunc: "Register" + strcase.ToCamel(svc.Name) + "RPCsGroup",
 	}

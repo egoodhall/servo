@@ -4,7 +4,6 @@ package example
 import (
 	"context"
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"time"
 )
 
@@ -54,18 +53,10 @@ type Telemetry struct {
 	Metric        *Metric `json:"metric,omitempty"`
 }
 
-type EchoServiceHttpClient interface {
+type EchoService interface {
 	Echo(context.Context, *EchoRequest) (*EchoResponse, error)
 }
 
-type EchoService interface {
-	Echo(echo.Context, *EchoRequest) (*EchoResponse, error)
-}
-
-type TelemetryServiceHttpClient interface {
-	Publish(context.Context, *Telemetry) error
-}
-
 type TelemetryService interface {
-	Publish(echo.Context, *Telemetry) error
+	Publish(context.Context, *Telemetry) error
 }

@@ -8,6 +8,7 @@ import (
 
 func Server(gofile *jen.File, svc *ast.Service) {
 	gofile.Add(newHeaderComment("%s HTTP server", svc.Name))
+	gofile.Add(generateServerInterface(svc)).Line()
 	gofile.Add(generateServerConstructor(svc)).Line()
 	gofile.Add(generateServerRegisterFunc(svc)).Line()
 	gofile.Add(generateServerRegisterGroupFunc(svc)).Line()
@@ -22,11 +23,30 @@ func Server(gofile *jen.File, svc *ast.Service) {
 	}
 }
 
+func generateServerInterface(svc *ast.Service) *jen.Statement {
+	names := newServerNames(svc)
+	return jen.Type().Id(names.HttpEndpoints).InterfaceFunc(func(g *jen.Group) {
+		for _, rpc := range svc.Rpcs {
+			rpcNames := newRpcNames(svc, rpc)
+			method := jen.Id(rpcNames.MethodName).Params(
+				jen.Qual(pkgEcho, "Context"),
+				jen.Op("*").Id(rpc.Request),
+			)
+			if rpc.Response == "" {
+				method.Error()
+			} else {
+				method.Params(jen.Op("*").Id(rpc.Response), jen.Error())
+			}
+			g.Add(method)
+		}
+	})
+}
+
 func generateServerConstructor(svc *ast.Service) *jen.Statement {
 	names := newServerNames(svc)
 
 	return jen.Func().Id(names.Constructor).Params(
-		jen.Id("svc").Id(svc.Name),
+		jen.Id("svc").Id(names.HttpEndpoints),
 	).Op("*").Qual(pkgEcho, "Echo").Block(
 		jen.Id("srv").Op(":=").Qual(pkgEcho, "New").Call(),
 		jen.Id(names.RegisterFunc).Call(jen.Id("svc"), jen.Id("srv")),
@@ -38,7 +58,7 @@ func generateServerRegisterFunc(svc *ast.Service) *jen.Statement {
 	names := newServerNames(svc)
 
 	return jen.Func().Id(names.RegisterFunc).Params(
-		jen.Id("svc").Id(svc.Name),
+		jen.Id("svc").Id(names.HttpEndpoints),
 		jen.Id("srv").Op("*").Qual(pkgEcho, "Echo"),
 	).Block(
 		jen.Id(names.RegisterGroupFunc).Call(jen.Id("svc"), jen.Id("srv").Dot("Group").Call(jen.Lit("/"))),
@@ -49,10 +69,10 @@ func generateServerRegisterGroupFunc(svc *ast.Service) *jen.Statement {
 	names := newServerNames(svc)
 
 	return jen.Func().Id(names.RegisterGroupFunc).Params(
-		jen.Id("svc").Id(svc.Name),
+		jen.Id("svc").Id(names.HttpEndpoints),
 		jen.Id("srv").Op("*").Qual(pkgEcho, "Group"),
 	).BlockFunc(func(g *jen.Group) {
-		g.Id("compat").Op(":=").Op("&").Id(names.HttpCompat).Values(jen.Id("svc"))
+		g.Id("compat").Op(":=").Op("&").Id(names.HttpAdapter).Values(jen.Id("svc"))
 		for _, rpc := range svc.Rpcs {
 			rNames := newRpcNames(svc, rpc)
 
@@ -64,8 +84,8 @@ func generateServerRegisterGroupFunc(svc *ast.Service) *jen.Statement {
 func generateServerImpl(svc *ast.Service) *jen.Statement {
 	names := newServerNames(svc)
 
-	return jen.Type().Id(names.HttpCompat).Struct(
-		jen.Id("svc").Id(svc.Name),
+	return jen.Type().Id(names.HttpAdapter).Struct(
+		jen.Id("svc").Id(names.HttpEndpoints),
 	)
 }
 
@@ -74,7 +94,7 @@ func generateServerRpcHandler(svc *ast.Service, rpc *ast.Rpc) *jen.Statement {
 	rNames := newRpcNames(svc, rpc)
 
 	return jen.Commentf("HTTP compatibility wrapper for %s.%s.", svc.Name, rpc.Name).Line().
-		Func().Parens(jen.Id("s").Op("*").Id(sNames.HttpCompat)).Id(rNames.MethodName).Params(jen.Id("c").Qual(pkgEcho, "Context")).Error().Block(
+		Func().Parens(jen.Id("s").Op("*").Id(sNames.HttpAdapter)).Id(rNames.MethodName).Params(jen.Id("c").Qual(pkgEcho, "Context")).Error().Block(
 		jen.Id("req").Op(":=").New(jen.Id(rpc.Request)),
 		jen.If(
 			jen.Err().Op(":=").Id("c").Dot("Bind").Params(jen.Id("req")),
@@ -104,7 +124,7 @@ func generateServerPubHandler(svc *ast.Service, rpc *ast.Rpc) *jen.Statement {
 	rNames := newRpcNames(svc, rpc)
 
 	return jen.Commentf("HTTP compatibility wrapper for %s.%s.", svc.Name, rpc.Name).Line().
-		Func().Parens(jen.Id("s").Op("*").Id(sNames.HttpCompat)).Id(rNames.MethodName).Params(jen.Id("c").Qual(pkgEcho, "Context")).Error().
+		Func().Parens(jen.Id("s").Op("*").Id(sNames.HttpAdapter)).Id(rNames.MethodName).Params(jen.Id("c").Qual(pkgEcho, "Context")).Error().
 		Block(
 			jen.Id("req").Op(":=").New(jen.Id(rpc.Request)),
 			jen.If(

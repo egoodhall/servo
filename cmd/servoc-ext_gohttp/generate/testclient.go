@@ -24,27 +24,29 @@ func TestClient(gofile *jen.File, svc *ast.Service) {
 
 func generateTestClientConstructor(svc *ast.Service) *jen.Statement {
 	names := newTestClientNames(svc)
+	srvNames := newServerNames(svc)
 
 	return jen.Func().Id(names.Constructor).
-		Params(jen.Id("svc").Id(svc.Name)).
+		Params(jen.Id("svc").Id(srvNames.HttpEndpoints)).
 		List(jen.Id(names.Interface)).
 		Block(jen.Return(jen.Op("&").Id(names.Implementation).Values(jen.Id("svc"))))
 }
 
 func generateTestClientType(svc *ast.Service) *jen.Statement {
 	names := newTestClientNames(svc)
+	srvNames := newServerNames(svc)
 
 	return jen.Var().Id("_").Id(names.Interface).Op("=").New(jen.Id(names.Implementation)).
 		Line().
 		Type().Id(names.Implementation).Struct(
-		jen.Id("service").Id(svc.Name),
+		jen.Id("service").Id(srvNames.HttpEndpoints),
 	)
 }
 
 func generateTestClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.Statement {
 	names := newTestClientNames(svc)
-	sNames := newServerNames(svc)
-	rNames := newRpcNames(svc, rpc)
+	srvNames := newServerNames(svc)
+	rpcNames := newRpcNames(svc, rpc)
 
 	return jen.Func().Params(jen.Id("client").Op("*").Id(names.Implementation)).
 		Id(strcase.ToCamel(rpc.Name)).
@@ -67,10 +69,10 @@ func generateTestClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.S
 			jen.List(jen.Id("res")).Op(":=").Qual(pkgHttptest, "NewRecorder").Call(),
 			jen.Line(),
 			jen.Id("ctx").Op(":=").
-				Id(sNames.Constructor).Call(jen.Id("client").Dot("service")).
+				Id(srvNames.Constructor).Call(jen.Id("client").Dot("service")).
 				Dot("NewContext").Call(jen.Id("req"), jen.Id("res")),
 			jen.If(
-				jen.Err().Op(":=").Parens(jen.Op("&").Id(sNames.HttpCompat).Values(jen.Id("client").Dot("service"))).Dot(rNames.MethodName).Call(jen.Id("ctx")),
+				jen.Err().Op(":=").Parens(jen.Op("&").Id(srvNames.HttpAdapter).Values(jen.Id("client").Dot("service"))).Dot(rpcNames.MethodName).Call(jen.Id("ctx")),
 				jen.Err().Op("!=").Nil(),
 			).Block(
 				jen.Return(jen.Nil(), jen.Err()),
@@ -90,8 +92,8 @@ func generateTestClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.S
 
 func generateTestClientMethodWithoutResponse(svc *ast.Service, rpc *ast.Rpc) *jen.Statement {
 	names := newTestClientNames(svc)
-	sNames := newServerNames(svc)
-	rNames := newRpcNames(svc, rpc)
+	srvNames := newServerNames(svc)
+	rpcNames := newRpcNames(svc, rpc)
 
 	return jen.Func().Params(jen.Id("client").Op("*").Id(names.Implementation)).
 		Id(strcase.ToCamel(rpc.Name)).
@@ -114,10 +116,10 @@ func generateTestClientMethodWithoutResponse(svc *ast.Service, rpc *ast.Rpc) *je
 			jen.List(jen.Id("res")).Op(":=").Qual(pkgHttptest, "NewRecorder").Call(),
 			jen.Line(),
 			jen.Id("ctx").Op(":=").
-				Id(sNames.Constructor).Call(jen.Id("client").Dot("service")).
+				Id(srvNames.Constructor).Call(jen.Id("client").Dot("service")).
 				Dot("NewContext").Call(jen.Id("req"), jen.Id("res")),
 			jen.If(
-				jen.Err().Op(":=").Parens(jen.Op("&").Id(sNames.HttpCompat).Values(jen.Id("client").Dot("service"))).Dot(rNames.MethodName).Call(jen.Id("ctx")),
+				jen.Err().Op(":=").Parens(jen.Op("&").Id(srvNames.HttpAdapter).Values(jen.Id("client").Dot("service"))).Dot(rpcNames.MethodName).Call(jen.Id("ctx")),
 				jen.Err().Op("!=").Nil(),
 			).Block(
 				jen.Return(jen.Err()),

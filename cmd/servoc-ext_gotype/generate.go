@@ -91,31 +91,15 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 			gofile.Line()
 		}
 
-		gofile.Type().Id(strcase.ToCamel(svc.Name) + "HttpClient").InterfaceFunc(func(g *jen.Group) {
-			for _, rpc := range svc.Rpcs {
-				if rpc.Response != "" {
-					g.Id(strcase.ToCamel(rpc.Name)).
-						Params(jen.Qual(pkgContext, "Context"), getMethodType(rpc.Request)).
-						Params(getMethodType(rpc.Response), jen.Error())
-				} else {
-					g.Id(strcase.ToCamel(rpc.Name)).
-						Params(jen.Qual(pkgContext, "Context"), getMethodType(rpc.Request)).
-						Error()
-				}
-			}
-		})
-
-		gofile.Line()
-
 		gofile.Type().Id(strcase.ToCamel(svc.Name)).InterfaceFunc(func(g *jen.Group) {
 			for _, rpc := range svc.Rpcs {
 				if rpc.Response != "" {
 					g.Id(strcase.ToCamel(rpc.Name)).
-						Params(jen.Qual(pkgEcho, "Context"), getMethodType(rpc.Request)).
+						Params(jen.Qual(pkgContext, "Context"), getMethodType(rpc.Request)).
 						Params(getMethodType(rpc.Response), jen.Error())
 				} else {
 					g.Id(strcase.ToCamel(rpc.Name)).
-						Params(jen.Qual(pkgEcho, "Context"), getMethodType(rpc.Request)).
+						Params(jen.Qual(pkgContext, "Context"), getMethodType(rpc.Request)).
 						Error()
 				}
 			}
