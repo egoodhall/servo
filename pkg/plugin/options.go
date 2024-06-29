@@ -3,11 +3,12 @@ package plugin
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/egoodhall/servo/internal/plugin"
 	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/egoodhall/servo/pkg/ipc"
-	"reflect"
-	"strings"
 )
 
 func ReadOptionsDescriptor[T any]() ([]*ipc.Option[any], error) {
@@ -57,13 +58,13 @@ func parseOptions[O any](prefix string, definitions []*ipc.Option[any], options 
 		func(def *ipc.Option[any]) string { return def.Name },
 		func(def *ipc.Option[any]) (any, bool) { return def.Default, def.Default != nil },
 	)
-	// Then add globally defined values
-	intoMap(optionsMap, globals,
+	// Then add file-specific overrides
+	intoMap(optionsMap, options,
 		func(opt *ast.Option[any]) string { return strings.TrimPrefix(opt.Name, prefix+".") },
 		func(opt *ast.Option[any]) (any, bool) { return opt.Value, opt.Value != nil },
 	)
-	// Then add file-specific overrides
-	intoMap(optionsMap, options,
+	// Then add globally defined values
+	intoMap(optionsMap, globals,
 		func(opt *ast.Option[any]) string { return strings.TrimPrefix(opt.Name, prefix+".") },
 		func(opt *ast.Option[any]) (any, bool) { return opt.Value, opt.Value != nil },
 	)

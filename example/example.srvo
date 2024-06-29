@@ -3,8 +3,11 @@
  *----------------------------------*/
 
 // Options can be specified
-option gotype.package = "example";
-option gohttp.package = "example";
+option gotype.enabled = true;
+option gotype.package = "main";
+
+option gohttp.enabled = true;
+option gohttp.package = "main";
 
 // A request to echo a message
 message EchoRequest {
@@ -51,12 +54,12 @@ message Log {
   value: string;
 }
 
-// A service to publish metrics
-service TelemetryService {
-  rpc publish(Telemetry);
-}
-
 union Telemetry {
   log: Log;
   metric: Metric;
+}
+
+// A service to publish metrics
+service TelemetryService {
+  rpc publish(Telemetry);
 }

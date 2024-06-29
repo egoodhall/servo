@@ -4,7 +4,7 @@
 default: servoc plugins
 
 example: servoc plugins
-	go generate ./example
+	go generate ./example/...
 
 servoc:
 	go generate ./internal/...

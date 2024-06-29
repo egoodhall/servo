@@ -33,9 +33,15 @@ func ServicesAndClients(file *ast.File, options options.Options) (*jen.File, err
 	})
 
 	for _, svc := range file.Services {
-		Server(gofile, svc)
-		Client(gofile, svc)
-		TestClient(gofile, svc)
+		if options.Server {
+			Server(gofile, svc)
+		}
+		if options.Client {
+			Client(gofile, svc)
+		}
+		if options.Client && options.Server {
+			TestClient(gofile, svc)
+		}
 	}
 
 	return gofile, nil
