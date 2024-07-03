@@ -1,0 +1,15 @@
+id = "zed-servo-extension"
+name = "Servo"
+version = "0.0.1"
+schema_version = 1
+authors = ["Eric Goodhall"]
+description = "Servo language support"
+repository = "https://github.com/egoodhall/zed-servo-extension"
+
+[grammars.servo]
+repository = "https://github.com/egoodhall/tree-sitter-servo"
+commit = "94d33632478045399448bfa0273d494ebeb6f172"
+
+[language_servers.servo]
+name = "Servo Language Server"
+language = "servo"
