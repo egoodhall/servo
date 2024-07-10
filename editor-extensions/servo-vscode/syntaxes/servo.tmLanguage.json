@@ -1,0 +1,129 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Servo",
+  "patterns": [
+    { "include": "#primitives" },
+    { "include": "#constants" },
+    { "include": "#comments" },
+    { "include": "#typedefs" },
+    { "include": "#fields" },
+    { "include": "#rpcs" }
+  ],
+  "repository": {
+    "primitives": {
+      "match": "\\b(bool|string|float32|float64|int32|int64|byte|timestamp|uuid)\\b",
+      "name": "keyword.other.servo"
+    },
+    "typedefs": {
+      "patterns": [
+        {
+          "match": "\\b(message|union|enum|service)\\s+(\\w+)\\s+\\{",
+          "captures": {
+            "1": { "name": "keyword.control.servo" },
+            "2": { "name": "entity.name.type.servo" }
+          }
+        },
+        {
+          "match": "\\b(alias)\\s+(\\w+)\\s+(=|->)\\s+((?:\\w|\\[|\\]|:)+)",
+          "captures": {
+            "1": { "name": "keyword.control.servo" },
+            "2": { "name": "entity.name.type.servo" },
+            "3": { "name": "keyword.operator.servo" },
+            "4": { "patterns": [{ "include": "#types" }] }
+          }
+        },
+        {
+          "match": "\\b(option)\\s+(\\w+(?:\\.\\w+)*)\\s+(=|->)\\s+((?:\\w|\\[|\\]|:)+)",
+          "captures": {
+            "1": { "name": "keyword.control.servo" },
+            "2": { "name": "entity.name.type.servo" },
+            "3": { "name": "keyword.operator.servo" },
+            "4": { "patterns": [{ "include": "#types" }] }
+          }
+        }
+      ]
+    },
+    "fields": {
+      "match": "\\b(\\w+)\\s*:\\s*((\\w|\\[|\\]|:)+)\\s*;",
+      "captures": {
+        "1": {
+          "name": "variable.name.servo"
+        },
+        "2": { "patterns": [{ "include": "#types" }] }
+      }
+    },
+    "rpcs": {
+      "match": "\\b(rpc)\\s*(\\w+)\\((\\w+)\\)(?::\\s*((?:\\w|\\[|\\]|:)+))?\\s*;",
+      "captures": {
+        "1": { "name": "keyword.control.servo" },
+        "2": { "name": "entity.name.function" },
+        "3": { "patterns": [{ "include": "#types" }] },
+        "4": { "patterns": [{ "include": "#types" }] }
+      }
+    },
+    "types": {
+      "patterns": [
+        { "include": "#primitives" },
+        {
+          "match": "\\w+",
+          "name": "entity.name.type.servo"
+        },
+        {
+          "match": "\\b\\[\\s*(\\w+)(?::(\\w+))\\s*\\]\\b",
+          "captures": {
+            "1": { "patterns": [{ "include": "#primitives" }] },
+            "2": {
+              "patterns": [
+                { "include": "#primitives" },
+                {
+                  "match": "\\w+",
+                  "name": "entity.name.type.servo"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "options": {
+      "match": "\\b(option)\\s+(\\w+)\\s*(=)\\s*()"
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.servo",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.numeric.servo",
+          "match": "\\b(?:-?[0-9]+(?:\\.[0-9]+)?)\\b"
+        },
+        {
+          "name": "string.quoted.double.servo",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.servo",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.servo",
+          "match": "//.+$"
+        },
+        {
+          "name": "comment.block.servo",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.servo"
+}

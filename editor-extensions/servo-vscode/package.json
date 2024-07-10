@@ -1,0 +1,47 @@
+{
+  "name": "servo",
+  "displayName": "Servo",
+  "description": "Servo DSL support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "dependencies": {
+    "typescript": "^5.5.3",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.1",
+    "@vscode/test-electron": "^2.3.9"
+  },
+  "main": "src/extension.ts",
+  "scripts": {
+    "vscode:prepublish": "pnpm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
+    "test": "sh ./scripts/e2e.sh"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "servo",
+        "aliases": [
+          "Servo",
+          "servo"
+        ],
+        "extensions": [
+          ".srvo"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "servo",
+        "scopeName": "source.servo",
+        "path": "./syntaxes/servo.tmLanguage.json"
+      }
+    ]
+  }
+}

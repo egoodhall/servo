@@ -1,0 +1,3 @@
+[submodule "editor-extensions/servo-zed/grammars/servo"]
+	path = editor-extensions/servo-zed/grammars/servo
+	url = https://github.com/egoodhall/tree-sitter-servo
