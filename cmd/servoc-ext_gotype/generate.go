@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/dave/jennifer/jen"
@@ -12,6 +13,9 @@ const (
 	pkgUuid    = "github.com/google/uuid"
 	pkgContext = "context"
 	pkgEcho    = "github.com/labstack/echo/v4"
+	pkgJson    = "encoding/json"
+	pkgErrors  = "errors"
+	pkgFmt     = "fmt"
 )
 
 func (x *GoStructPlugin) Generate(file *ast.File, options Options) error {
@@ -41,6 +45,9 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 		pkgUuid:    "uuid",
 		pkgContext: "context",
 		pkgEcho:    "echo",
+		pkgJson:    "json",
+		pkgErrors:  "errors",
+		pkgFmt:     "fmt",
 	})
 
 	if len(file.Aliases) > 0 {
@@ -77,13 +84,48 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 
 	for _, union := range file.Unions {
 		gofile.Type().Id(strcase.ToCamel(union.Name)).StructFunc(func(g *jen.Group) {
-			g.Id(union.Name + "Type").String().Tag(map[string]string{"json": "@type"})
+			g.Id(strcase.ToCamel(union.Name) + "Type").String().Tag(map[string]string{"json": "@type"})
 			for _, member := range union.Members {
 				g.Id(strcase.ToCamel(member.Name)).
 					Op("*").Id(member.Type.Name).
 					Tag(map[string]string{"json": member.Name + ",omitempty"})
 			}
 		}).Line()
+
+		gofile.Func().Params(jen.Id("u").Op("*").Id(strcase.ToCamel(union.Name))).Id("UnmarshalJSON").Params(jen.Id("p").Op("[]").Byte()).Error().BlockFunc(func(g *jen.Group) {
+			g.If(jen.Id("u").Op("==").Nil()).Block(
+				jen.Return(jen.Qual(pkgErrors, "New").Params(jen.Lit(fmt.Sprintf("unable to unmarshal into nil %s pointer", strcase.ToCamel(union.Name))))),
+			).Line()
+
+			g.Var().Id("discriminator").Struct(
+				jen.Id("Type").String().Tag(map[string]string{"json": "@type"}),
+			)
+			g.If(jen.Err().Op(":=").Qual(pkgJson, "Unmarshal").Params(jen.Id("p"), jen.Op("&").Id("discriminator")), jen.Err().Op("!=").Nil()).Block(
+				jen.Return(jen.Err()),
+			).Line()
+
+			g.Switch(jen.Id("discriminator").Dot("Type")).BlockFunc(func(g *jen.Group) {
+				g.CaseFunc(func(g *jen.Group) {
+					for _, member := range union.Members {
+						g.Lit(member.Name)
+					}
+				}).Block(
+					jen.Return(jen.Qual(pkgJson, "Unmarshal").Params(jen.Id("p"), jen.Id("u"))),
+				)
+				g.Default().Block(
+					jen.Return(jen.Qual(pkgFmt, "Errorf").Params(jen.Lit(fmt.Sprintf(`unknown %s type "%%s"`, strcase.ToCamel(union.Name))), jen.Id("discriminator").Dot("Type"))),
+				)
+			}).Line()
+		}).Line()
+
+		for _, member := range union.Members {
+			gofile.Func().Id("New" + strcase.ToCamel(union.Name) + strcase.ToCamel(member.Name)).Params(jen.Id("value").Id(member.Type.Name)).Op("*").Id(strcase.ToCamel(union.Name)).Block(
+				jen.Return(jen.Op("&").Id(strcase.ToCamel(union.Name)).Values(
+					jen.Id(strcase.ToCamel(union.Name)+"Type").Op(":").Lit(member.Name),
+					jen.Id(strcase.ToCamel(member.Name)).Op(":").Op("&").Id("value"),
+				)),
+			).Line()
+		}
 	}
 
 	for i, svc := range file.Services {

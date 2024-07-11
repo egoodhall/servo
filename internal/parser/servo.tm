@@ -52,7 +52,6 @@ boolLiteral = /true|false/
 
 <inEnumDefinition> {
   Name: /{ident}/
-  Value: /[A-Z][A-Z0-9_]+/ 1
 }
 
 <inAlias> {
@@ -136,7 +135,7 @@ Service: 'service' ServiceName WhiteSpace? '{' WhiteSpace? MethodList+ '}';
 
 # Enum Definitions
 EnumName -> EnumName: Name;
-EnumValue -> EnumValue: Value;
+EnumValue -> EnumValue: Name;
 EnumField: EnumValue WhiteSpace? ';';
 EnumValueList: (EnumField | EnumField WhiteSpace);
 Enum: 'enum' EnumName WhiteSpace? '{' WhiteSpace? EnumValueList+ '}';

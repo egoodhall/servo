@@ -3,6 +3,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"time"
 )
@@ -51,6 +54,40 @@ type Telemetry struct {
 	TelemetryType string  `json:"@type"`
 	Log           *Log    `json:"log,omitempty"`
 	Metric        *Metric `json:"metric,omitempty"`
+	Name          *string `json:"name,omitempty"`
+}
+
+func (u *Telemetry) UnmarshalJSON(p []byte) error {
+	if u == nil {
+		return errors.New("unable to unmarshal into nil Telemetry pointer")
+	}
+
+	var discriminator struct {
+		Type string `json:"@type"`
+	}
+	if err := json.Unmarshal(p, &discriminator); err != nil {
+		return err
+	}
+
+	switch discriminator.Type {
+	case "log", "metric", "name":
+		return json.Unmarshal(p, u)
+	default:
+		return fmt.Errorf("unknown Telemetry type \"%s\"", discriminator.Type)
+	}
+
+}
+
+func NewTelemetryLog(value Log) *Telemetry {
+	return &Telemetry{TelemetryType: "log", Log: &value}
+}
+
+func NewTelemetryMetric(value Metric) *Telemetry {
+	return &Telemetry{TelemetryType: "metric", Metric: &value}
+}
+
+func NewTelemetryName(value string) *Telemetry {
+	return &Telemetry{TelemetryType: "name", Name: &value}
 }
 
 type EchoService interface {

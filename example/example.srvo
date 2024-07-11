@@ -57,6 +57,7 @@ message Log {
 union Telemetry {
   log: Log;
   metric: Metric;
+  name: string;
 }
 
 // A service to publish metrics

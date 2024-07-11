@@ -26,13 +26,12 @@ const (
 	ERROR
 	NAME
 	MODIFIER
-	LBRACK // [
-	RBRACK // ]
-	COLON  // :
-	RPC    // rpc
-	LPAREN // (
-	RPAREN // )
-	VALUE
+	LBRACK    // [
+	RBRACK    // ]
+	COLON     // :
+	RPC       // rpc
+	LPAREN    // (
+	RPAREN    // )
 	MINUSGT   // ->
 	SEMICOLON // ;
 	ASSIGN    // =
@@ -68,7 +67,6 @@ var tokenStr = [...]string{
 	"rpc",
 	"(",
 	")",
-	"VALUE",
 	"->",
 	";",
 	"=",

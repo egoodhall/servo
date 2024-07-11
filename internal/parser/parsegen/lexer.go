@@ -177,11 +177,11 @@ recovered:
 		space = true
 	case 10: // BlockComment: /\/\*([^*]|\*+[^*\/])*\**\*\//
 		space = true
-	case 22: // ';': /;/, ';': /;/
+	case 21: // ';': /;/, ';': /;/
 		{
 			l.State = StateInitial
 		}
-	case 30: // '}': /\}/
+	case 29: // '}': /\}/
 		{
 			l.State = StateInitial
 		}

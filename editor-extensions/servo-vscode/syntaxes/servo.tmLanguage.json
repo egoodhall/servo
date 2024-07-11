@@ -3,11 +3,9 @@
   "name": "Servo",
   "patterns": [
     { "include": "#primitives" },
-    { "include": "#constants" },
     { "include": "#comments" },
     { "include": "#typedefs" },
-    { "include": "#fields" },
-    { "include": "#rpcs" }
+    { "include": "#fields" }
   ],
   "repository": {
     "primitives": {
@@ -17,29 +15,60 @@
     "typedefs": {
       "patterns": [
         {
-          "match": "\\b(message|union|enum|service)\\s+(\\w+)\\s+\\{",
+          "match": "\\b(message|union)\\s+(\\w+)\\s+\\{",
           "captures": {
             "1": { "name": "keyword.control.servo" },
             "2": { "name": "entity.name.type.servo" }
           }
         },
         {
-          "match": "\\b(alias)\\s+(\\w+)\\s+(=|->)\\s+((?:\\w|\\[|\\]|:)+)",
+          "begin": "\\b(service)\\s+(\\w+)\\s+\\{",
+          "end": "\\}",
           "captures": {
             "1": { "name": "keyword.control.servo" },
-            "2": { "name": "entity.name.type.servo" },
-            "3": { "name": "keyword.operator.servo" },
-            "4": { "patterns": [{ "include": "#types" }] }
-          }
+            "2": { "name": "entity.name.type.servo" }
+          },
+          "patterns": [{
+            "match": "\\b(rpc)\\s*(\\w+)\\((\\w+)\\)(?::\\s*((?:\\w|\\[|\\]|:)+))?\\s*;",
+            "captures": {
+              "1": { "name": "keyword.control.servo" },
+              "2": { "name": "entity.name.function" },
+              "3": { "patterns": [{ "include": "#types" }] },
+              "4": { "patterns": [{ "include": "#types" }] }
+            }
+          }]
         },
         {
-          "match": "\\b(option)\\s+(\\w+(?:\\.\\w+)*)\\s+(=|->)\\s+((?:\\w|\\[|\\]|:)+)",
+          "begin": "\\b(enum)\\s+(\\w+)\\s+\\{",
+          "end": "\\}",
           "captures": {
             "1": { "name": "keyword.control.servo" },
-            "2": { "name": "entity.name.type.servo" },
-            "3": { "name": "keyword.operator.servo" },
-            "4": { "patterns": [{ "include": "#types" }] }
-          }
+            "2": { "name": "entity.name.type.servo" }
+          },
+          "patterns": [{
+            "match":"\\b([a-zA-Z_0-9]+)\\s*;",
+            "captures": {
+              "1": {"name": "variable.name.servo"}
+            }
+          }]
+        },
+        {
+          "begin": "\\b(alias)\\s+(\\w+)\\s*-\\>\\s*",
+          "end": "\\s*;",
+          "captures": {
+            "1": { "name": "keyword.control.servo" },
+            "2": { "name": "variable.name.type.servo" }
+          },
+          "patterns": [{ "include": "#constants" }]
+        },
+        {
+          "begin": "\\b(option)\\s+(\\w+(?:\\.\\w+)*)\\s*=\\s*",
+          "end": "\\s*;",
+          "captures": {
+            "1": { "name": "keyword.control.servo" },
+            "2": { "name": "variable.name.type.servo" }
+          },
+          "patterns": [{ "include": "#constants" }]
         }
       ]
     },
@@ -50,15 +79,6 @@
           "name": "variable.name.servo"
         },
         "2": { "patterns": [{ "include": "#types" }] }
-      }
-    },
-    "rpcs": {
-      "match": "\\b(rpc)\\s*(\\w+)\\((\\w+)\\)(?::\\s*((?:\\w|\\[|\\]|:)+))?\\s*;",
-      "captures": {
-        "1": { "name": "keyword.control.servo" },
-        "2": { "name": "entity.name.function" },
-        "3": { "patterns": [{ "include": "#types" }] },
-        "4": { "patterns": [{ "include": "#types" }] }
       }
     },
     "types": {
@@ -86,7 +106,9 @@
       ]
     },
     "options": {
-      "match": "\\b(option)\\s+(\\w+)\\s*(=)\\s*()"
+      "begin": "\\b(option)\\b(\\w+)\\b(=)\\b",
+      "end": ";",
+      "patterns": [{"include": "#constants"}]
     },
     "constants": {
       "patterns": [
