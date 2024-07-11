@@ -5,9 +5,13 @@
     { "include": "#primitives" },
     { "include": "#comments" },
     { "include": "#typedefs" },
-    { "include": "#fields" }
+    { "include": "#keywords" }
   ],
   "repository": {
+    "keywords": {
+      "match": "\\b(enum|message|union|service|rpc|alias|option)\\b",
+      "name": "keyword.control.servo"
+    },
     "primitives": {
       "match": "\\b(bool|string|float32|float64|int32|int64|byte|timestamp|uuid)\\b",
       "name": "keyword.other.servo"
@@ -51,7 +55,8 @@
               "3": { "patterns": [{ "include": "#types" }] },
               "4": { "patterns": [{ "include": "#types" }] }
             }
-          }]
+          },
+          { "include": "#keywords" }]
         },
         {
           "begin": "\\b(enum)\\s+(\\w+)\\s+\\{",
