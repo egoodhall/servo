@@ -15,11 +15,26 @@
     "typedefs": {
       "patterns": [
         {
-          "match": "\\b(message|union)\\s+(\\w+)\\s+\\{",
+          "begin": "\\b(message)\\s+(\\w+)\\s+\\{",
+          "end": "}",
           "captures": {
             "1": { "name": "keyword.control.servo" },
             "2": { "name": "entity.name.type.servo" }
-          }
+          },
+          "patterns": [{
+            "include": "#fields"
+          }]
+        },
+        {
+          "begin": "\\b(union)\\s+(\\w+)\\s+\\{",
+          "end": "}",
+          "captures": {
+            "1": { "name": "keyword.control.servo" },
+            "2": { "name": "entity.name.type.servo" }
+          },
+          "patterns": [{
+            "include": "#fields"
+          }]
         },
         {
           "begin": "\\b(service)\\s+(\\w+)\\s+\\{",
@@ -29,7 +44,7 @@
             "2": { "name": "entity.name.type.servo" }
           },
           "patterns": [{
-            "match": "\\b(rpc)\\s*(\\w+)\\((\\w+)\\)(?::\\s*((?:\\w|\\[|\\]|:)+))?\\s*;",
+            "match": "\\b(rpc)\\s+(\\w+)\\(([\\w\\[\\]]+)\\)(?::\\s*([\\w\\[\\]]+))?\\s*;\\s*",
             "captures": {
               "1": { "name": "keyword.control.servo" },
               "2": { "name": "entity.name.function" },
@@ -53,13 +68,13 @@
           }]
         },
         {
-          "begin": "\\b(alias)\\s+(\\w+)\\s*-\\>\\s*",
+          "begin": "\\b(alias)\\s+(\\w+)\\s*->\\s*",
           "end": "\\s*;",
           "captures": {
             "1": { "name": "keyword.control.servo" },
             "2": { "name": "variable.name.type.servo" }
           },
-          "patterns": [{ "include": "#constants" }]
+          "patterns": [{ "include": "#types" }]
         },
         {
           "begin": "\\b(option)\\s+(\\w+(?:\\.\\w+)*)\\s*=\\s*",
@@ -73,7 +88,7 @@
       ]
     },
     "fields": {
-      "match": "\\b(\\w+)\\s*:\\s*((\\w|\\[|\\]|:)+)\\s*;",
+      "match": "\\b(\\w+)\\s*:\\s*([\\w\\[\\]:\\s]+)\\s*;",
       "captures": {
         "1": {
           "name": "variable.name.servo"
@@ -89,7 +104,7 @@
           "name": "entity.name.type.servo"
         },
         {
-          "match": "\\b\\[\\s*(\\w+)(?::(\\w+))\\s*\\]\\b",
+          "match": "\\s*\\[\\s*(\\w+)(?::\\s*(\\w+))\\s*\\]\\s*",
           "captures": {
             "1": { "patterns": [{ "include": "#primitives" }] },
             "2": {
@@ -106,7 +121,7 @@
       ]
     },
     "options": {
-      "begin": "\\b(option)\\b(\\w+)\\b(=)\\b",
+      "begin": "\\b(option)\\s+(\\w+)\\s*(=)\\s*",
       "end": ";",
       "patterns": [{"include": "#constants"}]
     },
