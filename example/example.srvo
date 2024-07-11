@@ -39,7 +39,7 @@ alias URN -> string;
 alias Bit -> bool;
 
 message Binary {
-  location: URN;
+  location: URN?;
   bits: [Bit];
 }
 

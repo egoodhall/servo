@@ -25,9 +25,7 @@
             "1": { "name": "keyword.control.servo" },
             "2": { "name": "entity.name.type.servo" }
           },
-          "patterns": [{
-            "include": "#fields"
-          }]
+          "patterns": [{ "include": "#fields" }]
         },
         {
           "begin": "\\b(union)\\s+(\\w+)\\s+\\{",
@@ -36,9 +34,7 @@
             "1": { "name": "keyword.control.servo" },
             "2": { "name": "entity.name.type.servo" }
           },
-          "patterns": [{
-            "include": "#fields"
-          }]
+          "patterns": [{ "include": "#fields" }]
         },
         {
           "begin": "\\b(service)\\s+(\\w+)\\s+\\{",
@@ -47,16 +43,18 @@
             "1": { "name": "keyword.control.servo" },
             "2": { "name": "entity.name.type.servo" }
           },
-          "patterns": [{
-            "match": "\\b(rpc)\\s+(\\w+)\\(([\\w\\[\\]]+)\\)(?::\\s*([\\w\\[\\]]+))?\\s*;\\s*",
-            "captures": {
-              "1": { "name": "keyword.control.servo" },
-              "2": { "name": "entity.name.function" },
-              "3": { "patterns": [{ "include": "#types" }] },
-              "4": { "patterns": [{ "include": "#types" }] }
-            }
-          },
-          { "include": "#keywords" }]
+          "patterns": [
+            {
+              "match": "\\b(rpc)\\s+(\\w+)\\(([\\w\\[\\]]+)\\)(?::\\s*([\\w\\[\\]]+))?\\s*;\\s*",
+              "captures": {
+                "1": { "name": "keyword.control.servo" },
+                "2": { "name": "entity.name.function" },
+                "3": { "patterns": [{ "include": "#types" }] },
+                "4": { "patterns": [{ "include": "#types" }] }
+              }
+            },
+            { "include": "#keywords" }
+          ]
         },
         {
           "begin": "\\b(enum)\\s+(\\w+)\\s+\\{",
@@ -65,12 +63,14 @@
             "1": { "name": "keyword.control.servo" },
             "2": { "name": "entity.name.type.servo" }
           },
-          "patterns": [{
-            "match":"\\b([a-zA-Z_0-9]+)\\s*;",
-            "captures": {
-              "1": {"name": "variable.name.servo"}
+          "patterns": [
+            {
+              "match": "\\b([a-zA-Z_0-9]+)\\s*;",
+              "captures": {
+                "1": { "name": "variable.name.servo" }
+              }
             }
-          }]
+          ]
         },
         {
           "begin": "\\b(alias)\\s+(\\w+)\\s*->\\s*",
@@ -93,12 +93,11 @@
       ]
     },
     "fields": {
-      "match": "\\b(\\w+)\\s*:\\s*([\\w\\[\\]:\\s]+)\\s*;",
+      "match": "\\b(\\w+)\\s*:\\s*([\\w\\[\\]:\\s]+)\\s*(\\?)?\\s*;",
       "captures": {
-        "1": {
-          "name": "variable.name.servo"
-        },
-        "2": { "patterns": [{ "include": "#types" }] }
+        "1": { "name": "variable.name.servo" },
+        "2": { "patterns": [{ "include": "#types" }] },
+        "3": { "name": "keyword.operator.servo" }
       }
     },
     "types": {
@@ -128,7 +127,7 @@
     "options": {
       "begin": "\\b(option)\\s+(\\w+)\\s*(=)\\s*",
       "end": ";",
-      "patterns": [{"include": "#constants"}]
+      "patterns": [{ "include": "#constants" }]
     },
     "constants": {
       "patterns": [
