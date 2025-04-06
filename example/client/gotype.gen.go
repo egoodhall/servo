@@ -16,31 +16,31 @@ type (
 )
 
 type EchoRequest struct {
-	Message string `json:"message"`
+	Message string `db:"message" json:"message"`
 }
 
 type EchoResponse struct {
-	Message   string    `json:"message"`
-	Id        uuid.UUID `json:"id"`
-	Signature []byte    `json:"signature"`
+	Message   string    `db:"message" json:"message"`
+	Id        uuid.UUID `db:"id" json:"id"`
+	Signature []byte    `db:"signature" json:"signature"`
 }
 
 type Metric struct {
-	Type   MetricType        `json:"type"`
-	Name   string            `json:"name"`
-	Labels map[string]string `json:"labels"`
-	Value  float64           `json:"value"`
-	At     time.Time         `json:"at"`
+	Type   MetricType        `db:"type" json:"type"`
+	Name   string            `db:"name" json:"name"`
+	Labels map[string]string `db:"labels" json:"labels"`
+	Value  float64           `db:"value" json:"value"`
+	At     time.Time         `db:"at" json:"at"`
 }
 
 type Binary struct {
-	Location URN   `json:"location"`
-	Bits     []Bit `json:"bits"`
+	Location *URN  `db:"location" json:"location"`
+	Bits     []Bit `db:"bits" json:"bits"`
 }
 
 type Log struct {
-	Labels map[string]string `json:"labels"`
-	Value  string            `json:"value"`
+	Labels map[string]string `db:"labels" json:"labels"`
+	Value  string            `db:"value" json:"value"`
 }
 
 type MetricType string
@@ -51,10 +51,10 @@ const (
 )
 
 type Telemetry struct {
-	TelemetryType string  `json:"@type"`
-	Log           *Log    `json:"log,omitempty"`
-	Metric        *Metric `json:"metric,omitempty"`
-	Name          *string `json:"name,omitempty"`
+	TelemetryType string  `db:"@type" json:"@type"`
+	Log           *Log    `db:"log,omitempty" json:"log,omitempty"`
+	Metric        *Metric `db:"metric,omitempty" json:"metric,omitempty"`
+	Name          *string `db:"name,omitempty" json:"name,omitempty"`
 }
 
 func (u *Telemetry) UnmarshalJSON(p []byte) error {
@@ -63,7 +63,7 @@ func (u *Telemetry) UnmarshalJSON(p []byte) error {
 	}
 
 	var discriminator struct {
-		Type string `json:"@type"`
+		Type string `db:"@type" json:"@type"`
 	}
 	if err := json.Unmarshal(p, &discriminator); err != nil {
 		return err

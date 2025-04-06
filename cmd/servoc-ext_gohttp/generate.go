@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
+	"github.com/egoodhall/servo/ast"
 	"github.com/egoodhall/servo/cmd/servoc-ext_gohttp/generate"
 	"github.com/egoodhall/servo/cmd/servoc-ext_gohttp/options"
-	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/hashicorp/go-retryablehttp"
 )
 

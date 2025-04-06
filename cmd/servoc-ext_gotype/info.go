@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/egoodhall/servo/pkg/ipc"
-	"github.com/egoodhall/servo/pkg/plugin"
+	"github.com/egoodhall/servo/ipc"
+	"github.com/egoodhall/servo/plugin"
 )
 
-func (x *GoStructPlugin) Info() (*ipc.InfoResponse, error) {
+func (x *GoTypePlugin) Info() (*ipc.InfoResponse, error) {
 	options, err := plugin.ReadOptionsDescriptor[Options]()
 	if err != nil {
 		return nil, err

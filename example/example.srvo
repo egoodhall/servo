@@ -5,7 +5,8 @@
 // Options can be specified
 option gotype.enabled = true;
 option gotype.package = "main";
-
+option gotype.tags = ["json", "db"];
+option gotype.optional_tags = {"json":"omitempty"};
 option gohttp.enabled = true;
 option gohttp.package = "main";
 

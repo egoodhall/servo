@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/egoodhall/servo/cmd/servoc-ext_gohttp/options"
-	"github.com/egoodhall/servo/pkg/ipc"
-	"github.com/egoodhall/servo/pkg/plugin"
+	"github.com/egoodhall/servo/ipc"
+	"github.com/egoodhall/servo/plugin"
 )
 
 func (x *GoHttpPlugin) Info() (*ipc.InfoResponse, error) {

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/dave/jennifer/jen"
-	"github.com/egoodhall/servo/pkg/ast"
+	"github.com/egoodhall/servo/ast"
 	"github.com/iancoleman/strcase"
 )
 
@@ -18,7 +18,7 @@ const (
 	pkgFmt     = "fmt"
 )
 
-func (x *GoStructPlugin) Generate(file *ast.File, options Options) error {
+func (x *GoTypePlugin) Generate(file *ast.File, options Options) error {
 	if !options.Enabled {
 		return nil
 	}
@@ -66,7 +66,7 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 		}
 		gofile.Type().Id(strcase.ToCamel(message.Name)).StructFunc(func(g *jen.Group) {
 			for _, field := range message.Fields {
-				g.Add(renderField(field))
+				g.Add(renderField(field, options))
 			}
 		})
 	}
@@ -84,11 +84,11 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 
 	for _, union := range file.Unions {
 		gofile.Type().Id(strcase.ToCamel(union.Name)).StructFunc(func(g *jen.Group) {
-			g.Id(strcase.ToCamel(union.Name) + "Type").String().Tag(map[string]string{"json": "@type"})
+			g.Id(strcase.ToCamel(union.Name) + "Type").String().Tag(renderTagValue("@type", options))
 			for _, member := range union.Members {
 				g.Id(strcase.ToCamel(member.Name)).
 					Op("*").Id(member.Type.Name).
-					Tag(map[string]string{"json": member.Name + ",omitempty"})
+					Tag(renderTagValue(member.Name+",omitempty", options))
 			}
 		}).Line()
 
@@ -98,7 +98,7 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 			).Line()
 
 			g.Var().Id("discriminator").Struct(
-				jen.Id("Type").String().Tag(map[string]string{"json": "@type"}),
+				jen.Id("Type").String().Tag(renderTagValue("@type", options)),
 			)
 			g.If(jen.Err().Op(":=").Qual(pkgJson, "Unmarshal").Params(jen.Id("p"), jen.Op("&").Id("discriminator")), jen.Err().Op("!=").Nil()).Block(
 				jen.Return(jen.Err()),
@@ -151,19 +151,19 @@ func generateFile(file *ast.File, options Options) (*jen.File, error) {
 	return gofile, nil
 }
 
-func renderField(field *ast.Field) *jen.Statement {
+func renderField(field *ast.Field, options Options) *jen.Statement {
 	switch ft := field.Type.(type) {
 	case ast.ScalarType:
 		s := jen.Id(strcase.ToCamel(field.Name))
 		if field.Optional {
 			s = s.Op("*")
 		}
-		s.Add(renderType(ft.Name)).Tag(renderTag(field))
+		s.Add(renderType(ft.Name)).Tag(renderTag(field, options))
 		return s
 	case ast.ListType:
-		return jen.Id(strcase.ToCamel(field.Name)).Op("[]").Add(renderType(ft.ElementType.Name)).Tag(renderTag(field))
+		return jen.Id(strcase.ToCamel(field.Name)).Op("[]").Add(renderType(ft.ElementType.Name)).Tag(renderTag(field, options))
 	case ast.MapType:
-		return jen.Id(strcase.ToCamel(field.Name)).Map(renderType(ft.KeyType.Name)).Add(renderType(ft.ValueType.Name)).Tag(renderTag(field))
+		return jen.Id(strcase.ToCamel(field.Name)).Map(renderType(ft.KeyType.Name)).Add(renderType(ft.ValueType.Name)).Tag(renderTag(field, options))
 	}
 	return nil
 }
@@ -182,11 +182,24 @@ func renderType(name string) *jen.Statement {
 	}
 }
 
-func renderTag(field *ast.Field) map[string]string {
-	if field.Optional {
-		return map[string]string{"json": field.Name + ",omitempty"}
+func renderTag(field *ast.Field, options Options) map[string]string {
+	t := make(map[string]string)
+	for _, tag := range options.Tags {
+		if v, ok := options.OptionalTags[tag]; ok && field.Optional {
+			t[tag] = fmt.Sprintf("%s,%s", field.Name, v)
+		} else {
+			t[tag] = field.Name
+		}
 	}
-	return map[string]string{"json": field.Name}
+	return t
+}
+
+func renderTagValue(value string, options Options) map[string]string {
+	t := make(map[string]string)
+	for _, tag := range options.Tags {
+		t[tag] = value
+	}
+	return t
 }
 
 func getMethodType(name string) *jen.Statement {

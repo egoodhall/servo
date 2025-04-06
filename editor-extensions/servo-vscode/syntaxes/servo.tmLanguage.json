@@ -53,7 +53,7 @@
                 "4": { "patterns": [{ "include": "#types" }] }
               }
             },
-            { "include": "#keywords" }
+            { "match": "\\b(rpc)\\b", "name": "keyword.control.servo" }
           ]
         },
         {

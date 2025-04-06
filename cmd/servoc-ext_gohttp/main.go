@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/egoodhall/servo/cliutil"
 	"github.com/egoodhall/servo/cmd/servoc-ext_gohttp/options"
-	"github.com/egoodhall/servo/internal/cliutil"
-	"github.com/egoodhall/servo/pkg/plugin"
+	"github.com/egoodhall/servo/plugin"
 )
 
 func main() {

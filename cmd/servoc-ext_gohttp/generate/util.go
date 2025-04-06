@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/dave/jennifer/jen"
-	"github.com/egoodhall/servo/pkg/ast"
+	"github.com/egoodhall/servo/ast"
 	"github.com/iancoleman/strcase"
 )
 

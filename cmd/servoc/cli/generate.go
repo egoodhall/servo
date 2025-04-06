@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/egoodhall/servo/internal/cliutil"
-	"github.com/egoodhall/servo/internal/parser"
-	"github.com/egoodhall/servo/internal/plugin"
-	"github.com/egoodhall/servo/pkg/ipc"
+	"github.com/egoodhall/servo/cliutil"
+	"github.com/egoodhall/servo/ipc"
+	"github.com/egoodhall/servo/parser"
+	"github.com/egoodhall/servo/plugin"
 )
 
 type generateCmd struct {
@@ -16,17 +16,27 @@ type generateCmd struct {
 }
 
 func (gc *generateCmd) Run() error {
-	files, err := parser.Files(gc.Files...)
+	ctx, cancel := cliutil.NewSignalCtx()
+	defer cancel()
+
+	options, err := gatherOptions(ctx)
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := cliutil.NewSignalCtx()
-	defer cancel()
+	files, err := parser.Files(gc.Files, options)
+	if err != nil {
+		return err
+	}
+
+	astOptions, err := options.ToAst(gc.Options)
+	if err != nil {
+		return err
+	}
 
 	return plugin.RunAll(ctx, func(name string, client plugin.Client) error {
 		_, err := client.Generate(&ipc.GenerateRequest{
-			Options: plugin.ToOptions(gc.Options),
+			Options: astOptions,
 			Files:   files,
 		})
 		if err != nil {

@@ -2,8 +2,8 @@ package generate
 
 import (
 	"github.com/dave/jennifer/jen"
+	"github.com/egoodhall/servo/ast"
 	"github.com/egoodhall/servo/cmd/servoc-ext_gohttp/options"
-	"github.com/egoodhall/servo/pkg/ast"
 )
 
 const (
