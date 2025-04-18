@@ -34,7 +34,7 @@ type Metric struct {
 }
 
 type Binary struct {
-	Location URN   `json:"location"`
+	Location *URN  `json:"location,omitempty"`
 	Bits     []Bit `json:"bits"`
 }
 
