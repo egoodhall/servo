@@ -1,8 +1,6 @@
 package generate
 
 import (
-	"fmt"
-
 	"github.com/dave/jennifer/jen"
 	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/iancoleman/strcase"
@@ -62,7 +60,7 @@ func generateTestClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.S
 			),
 			jen.Id("req").Op(":=").Qual(pkgHttptest, "NewRequest").Params(
 				jen.Qual(pkgHttp, "MethodPost"),
-				jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name))),
+				jen.Lit(rpcNames.HttpPath),
 				jen.Id("body"),
 			),
 			jen.Id("req").Dot("Header").Dot("Set").Call(jen.Lit("Content-Type"), jen.Lit("application/json")),

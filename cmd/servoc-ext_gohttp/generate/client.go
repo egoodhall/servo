@@ -1,8 +1,6 @@
 package generate
 
 import (
-	"fmt"
-
 	"github.com/dave/jennifer/jen"
 	"github.com/egoodhall/servo/pkg/ast"
 	"github.com/iancoleman/strcase"
@@ -136,6 +134,7 @@ func generateClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.State
 
 func generateClientMethodWithoutResponse(svc *ast.Service, rpc *ast.Rpc) *jen.Statement {
 	names := newClientNames(svc)
+	rpcNames := newRpcNames(svc, rpc)
 
 	return jen.Func().Params(jen.Id("client").Op("*").Id(names.Implementation)).
 		Id(strcase.ToCamel(rpc.Name)).
@@ -144,7 +143,7 @@ func generateClientMethodWithoutResponse(svc *ast.Service, rpc *ast.Rpc) *jen.St
 		Block(
 			jen.List(jen.Id("u"), jen.Err()).Op(":=").Qual(pkgUrl, "JoinPath").Params(
 				jen.Id("client").Dot("baseUrl"),
-				jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name))),
+				jen.Lit(rpcNames.HttpPath),
 			),
 			jen.If(jen.Err().Op("!=").Nil()).Block(
 				jen.Return(jen.Err()),

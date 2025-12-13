@@ -89,7 +89,7 @@ type telemetryServiceHttpClient struct {
 }
 
 func (client *telemetryServiceHttpClient) Publish(ctx context.Context, request *Telemetry) error {
-	u, err := url.JoinPath(client.baseUrl, "/telemetry-service/publish")
+	u, err := url.JoinPath(client.baseUrl, "telemetry/publish")
 	if err != nil {
 		return err
 	}
