@@ -65,8 +65,15 @@ type rpcNames struct {
 func newRpcNames(svc *ast.Service, rpc *ast.Rpc) rpcNames {
 	return rpcNames{
 		MethodName: strcase.ToCamel(rpc.Name),
-		HttpPath:   fmt.Sprintf("%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name)),
+		HttpPath:   fmt.Sprintf("%s/%s", trimSuffixes(strcase.ToKebab(svc.Name), "-service", "-api"), strcase.ToKebab(rpc.Name)),
 	}
+}
+
+func trimSuffixes(from string, suffixes ...string) string {
+	for _, suffix := range suffixes {
+		from = strings.TrimSuffix(from, suffix)
+	}
+	return from
 }
 
 func newHeaderComment(message string, args ...any) *jen.Statement {

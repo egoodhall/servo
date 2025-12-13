@@ -26,7 +26,7 @@ func RegisterEchoServiceRPCs(svc EchoServiceHttpEndpoints, srv *echo.Echo) {
 
 func RegisterEchoServiceRPCsGroup(svc EchoServiceHttpEndpoints, srv *echo.Group) {
 	compat := &echoServiceHttpAdapter{svc}
-	srv.POST("echo-service/echo", compat.Echo)
+	srv.POST("echo/echo", compat.Echo)
 }
 
 type echoServiceHttpAdapter struct {
@@ -66,7 +66,7 @@ func RegisterTelemetryServiceRPCs(svc TelemetryServiceHttpEndpoints, srv *echo.E
 
 func RegisterTelemetryServiceRPCsGroup(svc TelemetryServiceHttpEndpoints, srv *echo.Group) {
 	compat := &telemetryServiceHttpAdapter{svc}
-	srv.POST("telemetry-service/publish", compat.Publish)
+	srv.POST("telemetry/publish", compat.Publish)
 }
 
 type telemetryServiceHttpAdapter struct {

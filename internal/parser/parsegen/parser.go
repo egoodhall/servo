@@ -91,7 +91,6 @@ func (p *Parser) parse(start, end int16, lexer *Lexer) error {
 			var entry stackEntry
 			entry.sym.symbol = tmRuleSymbol[rule]
 			rhs := stack[len(stack)-ln:]
-			stack = stack[:len(stack)-ln]
 			if ln == 0 {
 				if p.next.symbol == noToken {
 					p.fetchNext(lexer, stack)
@@ -101,9 +100,10 @@ func (p *Parser) parse(start, end int16, lexer *Lexer) error {
 				entry.sym.offset = rhs[0].sym.offset
 				entry.sym.endoffset = rhs[ln-1].sym.endoffset
 			}
-			if err := p.applyRule(rule, &entry, rhs, lexer); err != nil {
+			if err := p.applyRule(rule, &entry, stack, lexer); err != nil {
 				return err
 			}
+			stack = stack[:len(stack)-len(rhs)]
 			if debugSyntax {
 				fmt.Printf("reduced to: %v\n", symbolName(entry.sym.symbol))
 			}
@@ -150,7 +150,8 @@ func (p *Parser) parse(start, end int16, lexer *Lexer) error {
 			}
 
 			p.recovering = 4
-			if stack = p.recoverFromError(lexer, stack); stack == nil {
+			stack = p.recoverFromError(lexer, stack, end)
+			if stack == nil {
 				return lastErr
 			}
 			state = stack[len(stack)-1].state
@@ -162,10 +163,16 @@ func (p *Parser) parse(start, end int16, lexer *Lexer) error {
 
 const errSymbol = 11
 
-// willShift checks if "symbol" is going to be shifted in the `stack+[state]` parsing stack.
-func (p *Parser) willShift(symbol int32, stack []stackEntry, state int16) bool {
-	if state == -1 {
-		return false
+// reduceAll simulates all pending reductions and returns true if the parser
+// can consume the next token in the `stack+[state]` parsing stack. This
+// function also returns the state of the parser after the reductions have been
+// applied (but before symbol is shifted).
+func reduceAll(stack []stackEntry, state int16, symbol int32, endState int16) (int16, bool) {
+	if symbol == noToken {
+		panic("a valid next token is expected")
+	}
+	if state < 0 {
+		return 0, false
 	}
 
 	var stack2alloc [4]int16
@@ -173,7 +180,7 @@ func (p *Parser) willShift(symbol int32, stack []stackEntry, state int16) bool {
 	size := len(stack)
 
 	// parsing_stack = stack[:size] + stack2
-	for state != p.endState {
+	for state != endState {
 		action := tmAction[state]
 		if action < -2 {
 			action = lalr(action, symbol)
@@ -198,10 +205,10 @@ func (p *Parser) willShift(symbol int32, stack []stackEntry, state int16) bool {
 			state = gotoState(state, symbol)
 			stack2 = append(stack2, state)
 		} else {
-			return action == -1 && gotoState(state, symbol) >= 0
+			return state, action == -1 && gotoState(state, symbol) >= 0
 		}
 	}
-	return symbol == eoiToken
+	return state, symbol == eoiToken
 }
 
 func (p *Parser) skipBrokenCode(lexer *Lexer, stack []stackEntry, canRecover func(symbol int32) bool) int {
@@ -216,7 +223,7 @@ func (p *Parser) skipBrokenCode(lexer *Lexer, stack []stackEntry, canRecover fun
 	return e
 }
 
-func (p *Parser) recoverFromError(lexer *Lexer, stack []stackEntry) []stackEntry {
+func (p *Parser) recoverFromError(lexer *Lexer, stack []stackEntry, endState int16) []stackEntry {
 	var recoverSyms [1 + token.NumTokens/8]uint8
 	var recoverPos []int
 
@@ -255,7 +262,7 @@ func (p *Parser) recoverFromError(lexer *Lexer, stack []stackEntry) []stackEntry
 			fmt.Printf("trying to recover on %v\n", symbolName(p.next.symbol))
 		}
 		for _, pos := range recoverPos {
-			if p.willShift(p.next.symbol, stack[:pos], gotoState(stack[pos-1].state, errSymbol)) {
+			if _, ok := reduceAll(stack[:pos], gotoState(stack[pos-1].state, errSymbol), p.next.symbol, endState); ok {
 				matchingPos = pos
 				break
 			}
@@ -336,7 +343,7 @@ restart:
 	p.next.offset, p.next.endoffset = lexer.Pos()
 }
 
-func (p *Parser) applyRule(rule int32, lhs *stackEntry, rhs []stackEntry, lexer *Lexer) (err error) {
+func (p *Parser) applyRule(rule int32, lhs *stackEntry, stack []stackEntry, lexer *Lexer) (err error) {
 	if nt := tmRuleType[rule]; nt != 0 {
 		p.listener(nt, lhs.sym.offset, lhs.sym.endoffset)
 	}

@@ -89,7 +89,7 @@ func generateClientMethodWithResponse(svc *ast.Service, rpc *ast.Rpc) *jen.State
 		Block(
 			jen.List(jen.Id("u"), jen.Err()).Op(":=").Qual(pkgUrl, "JoinPath").Params(
 				jen.Id("client").Dot("baseUrl"),
-				jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name))),
+				jen.Lit(newRpcNames(svc, rpc).HttpPath),
 			),
 			jen.If(jen.Err().Op("!=").Nil()).Block(
 				jen.Return(jen.Nil(), jen.Err()),

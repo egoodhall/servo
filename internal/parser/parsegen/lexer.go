@@ -27,10 +27,10 @@ type Lexer struct {
 
 	ch          rune // current character, -1 means EOI
 	offset      int  // character offset
+	scanOffset  int  // scanning offset
 	tokenOffset int  // last token byte offset
 	line        int  // current line number (1-based)
 	tokenLine   int  // last token line
-	scanOffset  int  // scanning offset
 	value       interface{}
 
 	State int // lexer state, modifiable
@@ -45,6 +45,7 @@ func (l *Lexer) Init(source string) {
 
 	l.ch = 0
 	l.offset = 0
+	l.scanOffset = 0
 	l.tokenOffset = 0
 	l.line = 1
 	l.tokenLine = 1
@@ -136,12 +137,15 @@ recovered:
 	tok := tmToken[rule]
 	var space bool
 	switch rule {
-	case 0:
+	case 0: // no match
 		if backupRule >= 0 {
 			rule = backupRule
 			hash = backupHash
 			l.rewind(backupOffset)
 		} else if l.offset == l.tokenOffset {
+			if l.ch == -1 {
+				tok = token.EOI
+			}
 			l.rewind(l.scanOffset)
 		}
 		if rule != 0 {
@@ -212,6 +216,12 @@ func (l *Lexer) Text() string {
 // Value returns the value associated with the last returned token.
 func (l *Lexer) Value() interface{} {
 	return l.value
+}
+
+// Copy forks the lexer in its current state.
+func (l *Lexer) Copy() Lexer {
+	ret := *l
+	return ret
 }
 
 // rewind can be used in lexer actions to accept a portion of a scanned token, or to include

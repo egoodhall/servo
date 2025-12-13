@@ -109,7 +109,7 @@ func generateTestClientMethodWithoutResponse(svc *ast.Service, rpc *ast.Rpc) *je
 			),
 			jen.Id("req").Op(":=").Qual(pkgHttptest, "NewRequest").Params(
 				jen.Qual(pkgHttp, "MethodPost"),
-				jen.Lit(fmt.Sprintf("/%s/%s", strcase.ToKebab(svc.Name), strcase.ToKebab(rpc.Name))),
+				jen.Lit(newRpcNames(svc, rpc).HttpPath),
 				jen.Id("body"),
 			),
 			jen.Id("req").Dot("Header").Dot("Set").Call(jen.Lit("Content-Type"), jen.Lit("application/json")),

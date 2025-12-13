@@ -35,7 +35,7 @@ type echoServiceHttpClient struct {
 }
 
 func (client *echoServiceHttpClient) Echo(ctx context.Context, request *EchoRequest) (*EchoResponse, error) {
-	u, err := url.JoinPath(client.baseUrl, "/echo-service/echo")
+	u, err := url.JoinPath(client.baseUrl, "echo/echo")
 	if err != nil {
 		return nil, err
 	}
